@@ -18,12 +18,18 @@ axis(1,at=c(0,50,100,150,200))
 axis(2,at=c(0,0.25,0.5,0.75,1),labels=paste(c(0,25,50,75,100),"%"))
 
 
-power1 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.05, type = "paired", alternative = "greater")
+power1 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.05, type = "two.sample", alternative = "greater")
 
 plot(power1)
 
-power2 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.01, type = "paired", alternative = "greater")
+power2 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.01, type = "two.sample", alternative = "greater")
 
 plot(power2)
+
+power2
+
+power3 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.05, type = "two.sample", alternative = "greater")
+
+plot(power3)
 
 
