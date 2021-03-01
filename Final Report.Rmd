@@ -1,0 +1,28 @@
+---
+title: "Power Analysis Consulting Report"
+author: "MSSP Consulting: Zihuan Qiao, Anna Cook, Yinfeng Zhou, Zixuan Liu, Jiaheng Li"
+date: "3/1/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(pwr)
+```
+
+# Project Description
+
+The client is interested in determining the relationship between nonsteroidal anti-inflammatory drugs (NSAIDS) and pain/disability measures in patients with radicular back pain, or pain that radiates from the back through the legs. This type of pain is often due to spinal stenosis and is typically treated with a combination of Gabapentin and physical therapy. Previous research suggests that NSAIDs may provide patients with additional relief, but this evidence is weak. The client’s research aims to explore this relationship further with a sufficiently highly powered study. 
+
+The client’s experiment will consist of two groups of patients with radicular back pain: one treatment and one control group. Both groups will be treated with a combination of Gabapentin and physical therapy. In addition, the treatment group will receive a regimen of Diclofenac (one type of NSAID), while the control group will receive an equal regimen of a placebo. Patients’ outcomes will be measured through two different self-report scales. The first is a Visual Analog Scale (VAS) in which patient’s report their pain level on a 0-10 scale. The second is the Roland Morris Disability Questionnaire, which is a series of 24 yes/no questions indicating the severity of a patients’ disability. This measure will be scored as a sum of all of the “yes” responses. Scores for each of these two measures will be collected at the start of the treatment regimen, after one week, and after one month. According to previous research, a “clinically meaningful improvement” in scores is 30% or more.   
+
+The client’s question for our team is how to determine a sufficient sample size such that it is possible to detect a 30% difference in scores between the treatment and control groups over the treatment period. 
+
+# Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
