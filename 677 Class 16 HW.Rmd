@@ -1,0 +1,93 @@
+---
+title: "Class 16 Problems"
+author: "Anna Cook"
+date: "3/5/2021"
+output: pdf_document
+---
+
+
+## Problem 1
+
+The mean is 4 ft/min, which equals 48 inches/min. The standard deviation is 5 inches. We want to know the probability that the machine will produce >= 250 ft/hr. 250 ft/hr = 50 in/min. From the calculations below, we can see that the probability of producing at least 250 ft/hr is approximately 0.001.
+
+```{r}
+mean <- 48
+sd <- 5
+z <- 50
+
+p <- pnorm(z, mean, sd/sqrt(60), lower.tail = TRUE)
+
+1 - p
+```
+
+## Problem 2
+
+We are using a Poisson distribution with mean 5, so lambda = 5. The sample size is 125 bolts. We want to know the probability that the average defects per bolt <= 5.5. Because the sample size is > 100, we can use the normal distribution instead of Poisson. From the calculations below, we can see that the probability is approximately 99.4%.
+
+```{r}
+lambda <- 5
+sd <- sqrt(lambda)
+n <- 125
+z <- 5.5
+p <- pnorm(z, lambda, sd/sqrt(n), lower.tail = TRUE)
+
+p
+```
+
+## Problem 3
+
+The proportion of defective items is 0.1. We want to know the smallest n such that the probability is 0.99 that the proportion of defective items is < 0.13. Based on the calculations below, we can see that the sample size must be > 541. 
+
+```{r}
+mean <- 0.1
+z <- 0.13
+sd <- sqrt(0.1*(1-0.1))
+sd
+
+# P(((0.13 - 0.1) / 0.3)*sqrt(n)) >= 0.99
+p <- 2.326^2 *100
+
+p
+```
+
+## Problem 4
+
+Because there are 10 digits, the expected value of the digits is the average of the digits, so the sum of them all divided by 10. In order to figure out the standard deviation, we first have to compute the second moment, which is just 1/10 times the squares of each digit. Because we are choosing 16 digits, n = 16. We can use the normal distribution to determine the probability of the average of the 16 digits will be less than 6 and less than 4. To get the probability of the average being between 6 and 4, we just take the difference of those two values. The calculations are shown below, and the probability of the average being between 4 and 6 is approximately 73.9%
+
+```{r}
+mean <- (1/10)*(0+1+2+3+4+5+6+7+8+9)
+sec_moment <- (1/10)*(1+4+9+16+25+36+49+64+81)
+sd <- sqrt(sec_moment - (4.5*4.5))
+n <- 16
+
+p1 <- pnorm(6, mean, sd/sqrt(n))
+p2 <- pnorm(4, mean, sd/sqrt(n))
+
+p1 - p2
+
+```
+
+
+## Problem 5
+
+For this problem, I used a beta distribution with a left skew. From this distribution, I took 10,000 random samples of 1000 observations, sampled with replacement. Then I took the mean of each sample, and plotted the histogram of the sample means. From the histogram of sample means, we can see that the samples show a normal distribution, even though the original beta distribution was left skewed.
+
+```{r, message=FALSE, warning=FALSE}
+hist(rbeta(10000,5,2))
+
+skew <- rbeta(10000,5,2)
+sample(skew, 100, replace = TRUE)
+mean(sample)
+
+means <- rep(0,10000)
+
+for (i in 1:10000) {
+  skew[i] <- rbeta(10000,5,2)
+  samples <- sample(skew, 1000, replace = TRUE)
+  means[i] <- mean(samples)
+}
+
+hist(means)
+```
+
+
