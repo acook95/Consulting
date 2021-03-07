@@ -15,14 +15,26 @@ The client is interested in determining the relationship between nonsteroidal an
 
 The client’s experiment will consist of two groups of patients with radicular back pain: one treatment and one control group. Both groups will be treated with a combination of Gabapentin and physical therapy. In addition, the treatment group will receive a regimen of Diclofenac (one type of NSAID), while the control group will receive an equal regimen of a placebo. Patients’ outcomes will be measured through two different self-report scales. The first is a Visual Analog Scale (VAS) in which patient’s report their pain level on a 0-10 scale. The second is the Roland Morris Disability Questionnaire, which is a series of 24 yes/no questions indicating the severity of a patients’ disability. This measure will be scored as a sum of all of the “yes” responses. Scores for each of these two measures will be collected at the start of the treatment regimen, after one week, and after one month. According to previous research, a “clinically meaningful improvement” in scores is 30% or more.   
 
-The client’s question for our team is how to determine a sufficient sample size such that it is possible to detect a 30% difference in scores between the treatment and control groups over the treatment period. 
+The client’s question for our team is how to determine a sufficient sample size such that it is possible to detect a 30% difference in scores between the treatment and control groups over the treatment period. To this end, we conducted a series of power analyses, described below.
 
-# Including Plots
+# Power Analysis
 
-You can also embed plots, for example:
+In order to determine a sufficient sample size for the client's experiment, we conducted a series of one-way, two-sample power t-tests. A two-sample test was chosen because the main comparison being made is between the control group and the treatment group, which are two separate, independent samples. Additionally, the test must be one-way because the client is only interested in whether the treatment group shows an improvement in outcomes compared with the control group, so the t-test is one-sided. 
+
+The first power analysis was conducted using an alpha level of 0.05, effect size of 30%, and 80% power. A minimum of 80% power is a widely agreed-upon standard in the statistical literature, and alpha level of 0.05 is a commonly used threshold for establishing statistical significance. The results of this analysis are shown in Figure 1. Based on this analysis, the minimum optimal sample size is ____. It is important to note that this sample size is for *each* group and must be doubled to determine the total participants needed. 
 
 ```{r pressure, echo=FALSE}
 plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Next, we conducted a similar power analysis as above, but this time using an alpha level of 0.01, another common threshold for establishing statistical significance. The results are shown in Figure 2. From this, we can see that the optimal sample size is ___ per group. 
+
+```{r}
+
+```
+
+In addition to the power analyses conducted for 30% effect size, we repeated the same procedure for 50% effect size, per the client's request. Like the previous two analyses, we used 80% power and both alpha levels of 0.05 and 0.01. The results are shown in Figures 3 and 4 respectively. The results of these power analyses show that the minimum necessary sample size to detect a 50% effect size is smaller than for a 30% effect size. This makes sense since a larger difference in scores between the treatment and control groups will be easier to reach statistical significance than a smaller difference in scores.
+
+# Conclusion
+
+Based on the analyses described above, our recommendation for the client is to use a minimum of ___ participants per group, or ___ total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. 
