@@ -1,5 +1,6 @@
 library(pwr)
-library(pwr2)
+
+# all power analyses were two-sample, one-way t-tests (type and alternative arguments)
 
 # alpha = 0.05, effect size = 30%
 power1 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.05,

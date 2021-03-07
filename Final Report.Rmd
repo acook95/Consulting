@@ -53,4 +53,4 @@ plot(power4)
 
 # Conclusion
 
-Based on the analyses described above, our recommendation for the client is to use a minimum of 139 participants per group, or 278 participants total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. However, the more subjects a study includes, the more powerful that study will be. We encourage the client to use their best judgment in choosing an optimal sample size
+Based on the analyses described above, our recommendation for the client is to use a minimum of 139 participants per group, or 278 participants total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. However, ...
