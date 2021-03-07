@@ -21,17 +21,17 @@ The client’s question for our team is how to determine a sufficient sample siz
 
 In order to determine a sufficient sample size for the client's experiment, we conducted a series of one-way, two-sample power t-tests. A two-sample test was chosen because the main comparison being made is between the control group and the treatment group, which are two separate, independent samples. Additionally, the test must be one-way because the client is only interested in whether the treatment group shows an improvement in outcomes compared with the control group, so the t-test is one-sided. 
 
-The first power analysis was conducted using an alpha level of 0.05, effect size of 30%, and 80% power. A minimum of 80% power is a widely agreed-upon standard in the statistical literature, and alpha level of 0.05 is a commonly used threshold for establishing statistical significance. The results of this analysis are shown in Figure 1. Based on this analysis, the minimum optimal sample size is ____. It is important to note that this sample size is for *each* group and must be doubled to determine the total participants needed. 
+The first power analysis was conducted using an alpha level of 0.05, effect size of 30%, and 80% power. A minimum of 80% power is a widely agreed-upon standard in the statistical literature, and alpha level of 0.05 is a commonly used threshold for establishing statistical significance. The results of this analysis are shown in Figure 1. Based on this analysis, the minimum optimal sample size is 139 subjects. It is important to note that this sample size is for *each* group and must be doubled to determine the total participants needed. 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Power analysis for 30% effect size and alpha level 0.05 yields an optimal sample size of 139."}
 power1 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.05,
                      type = "two.sample", alternative = "greater")
 plot(power1)
 ```
 
-Next, we conducted a similar power analysis as above, but this time using an alpha level of 0.01, another common threshold for establishing statistical significance. The results are shown in Figure 2. From this, we can see that the optimal sample size is ___ per group. 
+Next, we conducted a similar power analysis as above, but this time using an alpha level of 0.01, another common threshold for establishing statistical significance. The results are shown in Figure 2. From this, we can see that the optimal sample size is 225 subjects per group. 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Power analysis for 30% effect size and alpha level 0.01 yields an optimal sample size of 225."}
 power2 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.01,
                      type = "two.sample", alternative = "greater")
 plot(power2)
@@ -39,11 +39,13 @@ plot(power2)
 
 In addition to the power analyses conducted for 30% effect size, we repeated the same procedure for 50% effect size, per the client's request. Like the previous two analyses, we used 80% power and both alpha levels of 0.05 and 0.01. The results are shown in Figures 3 and 4 respectively. The results of these power analyses show that the minimum necessary sample size to detect a 50% effect size is smaller than for a 30% effect size. This makes sense since a larger difference in scores between the treatment and control groups will be easier to reach statistical significance than a smaller difference in scores.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Power analysis for 50% effect size and alpha level 0.05 yields an optimal sample size of 51."}
 power3 <- pwr.t.test(n=NULL, power = 0.8, d = 0.5, sig.level = 0.05,
                      type = "two.sample", alternative = "greater")
 plot(power3)
+```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Power analysis for 50% effect size and alpha level 0.01 yields an optimal sample size of 82."}
 power4 <- pwr.t.test(n=NULL, power = 0.8, d = 0.5, sig.level = 0.01,
                      type = "two.sample", alternative = "greater")
 plot(power4)
@@ -51,4 +53,4 @@ plot(power4)
 
 # Conclusion
 
-Based on the analyses described above, our recommendation for the client is to use a minimum of ___ participants per group, or ___ total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. However, the more subjects a study includes, the more powerful that study will be. We encourage the client to use their best judgment in choosing an optimal sample size
+Based on the analyses described above, our recommendation for the client is to use a minimum of 139 participants per group, or 278 participants total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. However, the more subjects a study includes, the more powerful that study will be. We encourage the client to use their best judgment in choosing an optimal sample size
