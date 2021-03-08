@@ -19,9 +19,9 @@ The client’s question for our team is how to determine a sufficient sample siz
 
 # Power Analysis
 
-In order to determine a sufficient sample size for the client's experiment, we conducted a series of one-way, two-sample power t-tests. A two-sample test was chosen because the main comparison being made is between the control group and the treatment group, which are two separate, independent samples. Additionally, the test must be one-way because the client is only interested in whether the treatment group shows an improvement in outcomes compared with the control group, so the t-test is one-sided. 
+In order to determine a sufficient sample size for the client's experiment, we conducted a series of one-way, two-sample power t-tests. A two-sample test was chosen because the main comparison being made is between the control group and the treatment group which are two separate, independent samples. Additionally, the test must be one-way because the client is only interested in whether the treatment group shows an improvement in outcomes compared with the control group, so the t-test is one-sided. 
 
-The first power analysis was conducted using an alpha level of 0.05, effect size of 30%, and 80% power. A minimum of 80% power is a widely agreed-upon standard in the statistical literature, and alpha level of 0.05 is a commonly used threshold for establishing statistical significance. The results of this analysis are shown in Figure 1. Based on this analysis, the minimum optimal sample size is 139 subjects. It is important to note that this sample size is for *each* group and must be doubled to determine the total participants needed. 
+The first power analysis was conducted using an alpha level of 0.05, effect size of 30%, and 80% power. A minimum of 80% power is a widely agreed-upon standard in the statistical literature, and alpha level of 0.05 is a commonly used threshold for establishing statistical significance. The results of this analysis are shown in Figure 1. Based on this analysis, the minimum optimal sample size is 139 subjects. It is important to note that this sample size is for each group and must be doubled to determine the total participants needed. 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Power analysis for 30% effect size and alpha level 0.05 yields an optimal sample size of 139."}
 power1 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.05,
@@ -29,7 +29,9 @@ power1 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.05,
 plot(power1)
 ```
 
-Next, we conducted a similar power analysis as above, but this time using an alpha level of 0.01, another common threshold for establishing statistical significance. The results are shown in Figure 2. From this, we can see that the optimal sample size is 225 subjects per group. 
+\newpage
+
+Next, we conducted a similar power analysis as above, this time using an alpha level of 0.01 which is another common threshold for establishing statistical significance. The results are shown in Figure 2. From this, we can see that the optimal sample size is 225 subjects per group. 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Power analysis for 30% effect size and alpha level 0.01 yields an optimal sample size of 225."}
 power2 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.01,
@@ -37,7 +39,9 @@ power2 <- pwr.t.test(n=NULL, power = 0.8, d = 0.3, sig.level = 0.01,
 plot(power2)
 ```
 
-In addition to the power analyses conducted for 30% effect size, we repeated the same procedure for 50% effect size, per the client's request. Like the previous two analyses, we used 80% power and both alpha levels of 0.05 and 0.01. The results are shown in Figures 3 and 4 respectively. The results of these power analyses show that the minimum necessary sample size to detect a 50% effect size is smaller than for a 30% effect size. This makes sense since a larger difference in scores between the treatment and control groups will be easier to reach statistical significance than a smaller difference in scores.
+\newpage
+
+In addition to the power analyses conducted for 30% effect size, we repeated the same procedure for 50% effect size, per the client's request. Like the previous two analyses, we used 80% power and alpha levels of 0.05 and 0.01. The results are shown in Figures 3 and 4 respectively. The results of these power analyses show that the minimum necessary sample size to detect a 50% effect size is smaller than for a 30% effect size. This makes sense since a larger difference in scores between the treatment and control groups will be easier to reach statistical significance than a smaller difference in scores.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Power analysis for 50% effect size and alpha level 0.05 yields an optimal sample size of 51."}
 power3 <- pwr.t.test(n=NULL, power = 0.8, d = 0.5, sig.level = 0.05,
@@ -51,6 +55,31 @@ power4 <- pwr.t.test(n=NULL, power = 0.8, d = 0.5, sig.level = 0.01,
 plot(power4)
 ```
 
+
+\newpage
+
 # Conclusion
 
-Based on the analyses described above, our recommendation for the client is to use a minimum of 139 participants per group, or 278 participants total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. However, ...
+Based on the analyses described above, our recommendation for the client is to use a minimum of 139 participants per group, or 278 participants total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. However, if the client prefers to use an alpha level of 0.01 instead of 0.05, our recommendation would be to use 225 participants per group, and 450 total. Additionally, it is important to note that the more subjects included in a study, the more highly powered that study will be. We encourage the client to use their best judgment in choosing a sample size which will sufficiently power their study, with 139 participants being the minimum recommendation. 
+
+Lastly, it is important to note that the client has two different outcome measure that may be used in the study. Because the "clinically meaningful improvement" of 30% is common between the two measures, there is no difference in the power analyses for these two scores. The same number of participants will be required regardless of the client's choice of disability index.
+
+\newpage
+
+# References
+
+Effect size and MCID:
+
+- https://journals.lww.com/ejanaesthesiology/fulltext/2016/01000/the_minimum_clinically_important_difference_is.12.aspx
+
+- https://academic.oup.com/jpepsy/article/34/9/917/939415 
+
+Client's background research:
+
+- https://journals.lww.com/spinejournal/Fulltext/2008/01010/Minimal_Clinically_Important_Change_for_Pain.15.aspx?casa_token=DaFxxS8YJP8AAAAA:P5_K2_8G8Y6j26_an8kQ5eeGYUuMfC-Gqd5uUjMiZdpvTeZkr6NVeo_gwkfS-0E_eQNByfixCJdLl274CiJsDPV8
+
+- https://www.sciencedirect.com/science/article/abs/pii/S1526590007008991
+
+- https://www.nejm.org/doi/10.1056/NEJMoa1313265
+
+
