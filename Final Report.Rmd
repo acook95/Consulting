@@ -60,9 +60,9 @@ plot(power4)
 
 # Conclusion
 
-Based on the analyses described above, our recommendation for the client is to use a minimum of 139 participants per group, or 278 participants total, as determined by the power analysis for a 30% effect size, 80% power, and alpha level of 0.05. However, if the client prefers to use an alpha level of 0.01 instead of 0.05, our recommendation would be to use 225 participants per group, and 450 total. Additionally, it is important to note that the more subjects included in a study, the more highly powered that study will be. We encourage the client to use their best judgment in choosing a sample size which will sufficiently power their study, with 139 participants being the minimum recommendation. 
+In conclusion, in order to achieve 80% power for a 30% effect size at alpha level of 0.05, assuming all assumptions hold, the minimum sample size required for the client's study is 139 participants per group, or 278 participants total. 
 
-Lastly, it is important to note that the client has two different outcome measure that may be used in the study. Because the "clinically meaningful improvement" of 30% is common between the two measures, there is no difference in the power analyses for these two scores. The same number of participants will be required regardless of the client's choice of disability index.
+It is important to note that the client has two different outcome measure that may be used in the study. Because the "clinically meaningful improvement" of 30% is common between the two measures, there is no difference in the power analyses for these two scores. The same number of participants will be required regardless of the client's choice of disability index.
 
 \newpage
 
