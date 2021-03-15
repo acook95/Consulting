@@ -36,3 +36,16 @@ survey_data$Age <- ifelse(survey_data$`Q9 Age`=="Less than 5 years ago", "younge
 ggplot(data = survey_data) + geom_bar(aes(Age))
 ggplot(data = survey_data) + geom_bar(aes(Size))
 ggplot(data = survey_data) + geom_bar(aes(Frequency))
+
+ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Age))
+ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Size))
+ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Age)) + facet_wrap(vars(Size))
+
+
+# histograms of challenges
+
+ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Frequency))
+ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Size))
+ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Age))
+
+
