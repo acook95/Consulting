@@ -1,0 +1,65 @@
+---
+title: "Burdget"
+output: html_document
+---
+
+```{r }
+library(ggplot2)
+library(carData)
+library(car)
+library(tidyr)
+data <- read.csv("Patterson_Capstone_Data_Cat_Num_031021.csv")
+```
+
+## 1.data cleaning
+```{r}
+data1 <- data[, c(4,8,10)]
+for(i in 1:dim(data1)[2]){
+  print(unique(data1[,i]))
+}
+#unknown -> NA
+for(i in 1:dim(data1)[2]){
+  data1[,i][data1[,i] == ""] <- NA
+  data1[,i][data1[,i] == "Unknown"] <- NA
+}
+
+names(data1) <- c("Birth_Freq", "Members_size", "Budget")
+data1 <- na.omit(data1)
+#Budget
+data1$Budget1 <- factor(recode(data1[,3],"
+        'No budget' = '0';
+       '$0 to $10,000' ='<10k';
+        '$10,000 to $50,000'='10k-50k'; 
+       '$50,000 to $100,000'='50k-100k';
+       '$100,000 to $200,000'='100k-200k';
+       '$200,000 to $500,000'='200k-500k';
+       '$500,000 to $1,000,000'='500k-1000k';
+       'Over $1,000,000'='>1000k';
+       ") )
+data1$Budget1 <- factor(data1$Budget1, levels = c('0','<10k','10k-50k','50k-100k','100k-200k','200k-500k','500k-1000k','>1000k'))
+#Birth_Freq
+data1$Birth_Freq1 <- factor(recode(data1[,1],"
+        'More common than 1 in 2,000 births' = '>1/2k';
+       '1 in 2,000-50,000 births' ='1/2k-1/5k';
+        '1 in 50,000-200,000 births'='1/5k-1/20k'; 
+       '1 in 200,000-500,000 births'='1/20k-1/500k';
+       '1 in 500,000-1,000,000 births'='1/500k-1/1000k';
+       'Fewer than 1 in 1,000,000 births'='<1/1000k';
+       ") )
+
+data1$Birth_Freq1 <- factor(data1$Birth_Freq1, levels = c('>1/2k','1/2k-1/5k','1/5k-1/20k','1/20k-1/500k','1/500k-1/1000k','<1/1000k'))
+
+data1$Members_size <- factor(data1$Members_size, levels = c("Fewer than 60" ,"60-300","300-1,000" , "1,000-10,000","More than 10,000"))
+```
+
+```{r}
+#Birth Frequency
+p1 <- ggplot(data1, aes(x=Birth_Freq1, fill=Budget1))+geom_bar()+xlab("Birth Frequency")+ylab("Organizition Count")
+p1+scale_fill_brewer(palette = "Oranges") + labs(fill='Budget')
+```
+
+```{r}
+p1 <- ggplot(data1, aes(x=Members_size, fill=Budget1))+geom_bar()+xlab("Members Size")+ylab("Organizition Count")
+p1+scale_fill_brewer(palette = "Blues") + labs(fill='Budget')
+```
+

@@ -1,10 +1,24 @@
+---
+title: "EDA"
+author: "Yinfeng Zhou"
+date: "2021/3/15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load("tidyverse","xlsx","magrittr","tidyr")
+```
+
+```{r}
 library(readxl)
-library(magrittr)
-library(ggplot2)
-
-survey_data <- read_excel("Patterson_Capstone_Data_Cat_Num_031021.xls")
+survey_data <- read_excel("C:/Users/49431/Downloads/Patterson_Capstone_Data_Cat_Num_031021.xls")
+#View(survey_data)
 
 
+```
+
+```{r}
 ## Bucketing independent variables
 
 survey_data$Frequency <- ifelse(survey_data$`Q6 Birth Frequency`=="More common than 1 in 2,000 births", "rare",
@@ -29,26 +43,38 @@ survey_data$Age <- ifelse(survey_data$`Q9 Age`=="Less than 5 years ago", "younge
                                         ifelse(survey_data$`Q9 Age`=="15+ years ago", "older",
                                                survey_data$`Q9 Age`))))
 
+```
 
-# histograms of independent variables
-
-ggplot(data = survey_data) + geom_bar(aes(Age, fill = Size)) +
-  ggtitle("Histogram of Organization Age by Size")
-ggplot(data = survey_data) + geom_bar(aes(Size))
-ggplot(data = survey_data) + geom_bar(aes(Frequency))
-
-ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Age)) +
-  ggtitle("Histogram of Disease Frequency by Age")
-ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Size)) +
-  ggtitle("Histogram of Disease Frequency by Size")
-ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Age)) +
-  facet_wrap(vars(Size))
+```{r}
+priority<-gather(survey_data,"Q21.11 Rank Awareness" ,      "Q21.12 Rank Fam Edu",         "Q21.13 Rank Provider Edu"  ,  "Q21.14 Rank Support Fam" ,    "Q21.15 Rank Resource" ,       "Q21.16 Rank Research",key="Field",value="Rank")
+priority%<>%select("Q4 Organization Name" , "Frequency" , "Size","Age"  ,  "Field"  ,  "Rank")
+```
 
 
-# histograms of challenges
-
-ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Frequency))
-ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Size))
-ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Age))
 
 
+
+## check missing value for survey dataset and predictors
+
+```{r check_missings}
+library(naniar)
+survey_data[survey_data == "?"] = NA
+# observations contains NA
+
+num3 = complete.cases(survey_data)
+missing = data.frame(survey_data)
+#rownames(missing) = 'missing values'
+gg_miss_var(missing) + theme(text = element_text(size=7)) +
+  ylab('Number of Missing Values in Each Variable')
+
+new<- data.frame(survey_data$Age, survey_data$Frequency,  
+                  survey_data$Size) 
+gg_miss_var(new) + theme(text = element_text(size=7)) +
+  ylab('Number of Missing Values in Each Variable')
+```
+## find distributions for predictors
+
+```{r}
+new[-c(3,108,112)]
+hist(new)
+```

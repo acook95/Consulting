@@ -1,0 +1,80 @@
+---
+title: "EDA"
+author: "Yinfeng Zhou"
+date: "2021/3/15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load("tidyverse","xlsx","magrittr","tidyr")
+```
+
+```{r}
+survey_data <- read_excel("Patterson_Capstone_Data_Cat_Num_031021.xls")
+View(survey_data)
+```
+
+```{r}
+## Bucketing independent variables
+
+survey_data$Frequency <- ifelse(survey_data$`Q6 Birth Frequency`=="More common than 1 in 2,000 births", "rare",
+                                ifelse(survey_data$`Q6 Birth Frequency`=="1 in 2,000-50,000 births", "rare",
+                                       ifelse(survey_data$`Q6 Birth Frequency`=="1 in 50,000-200,000 births", "rare",
+                                              ifelse(survey_data$`Q6 Birth Frequency`=="1 in 200,000-500,000 births", "ultra-rare",
+                                                     ifelse(survey_data$`Q6 Birth Frequency`=="1 in 500,000-1,000,000 births", "ultra-rare",
+                                                            ifelse(survey_data$`Q6 Birth Frequency`=="Fewer than 1 in 1,000,000 births", "ultra-rare",
+                                                                   survey_data$`Q6 Birth Frequency`))))))
+
+
+survey_data$Size <- ifelse(survey_data$`Q10 Size (#Members)`=="Fewer than 60", "small",
+                           ifelse(survey_data$`Q10 Size (#Members)`=="60-300", "small",
+                                  ifelse(survey_data$`Q10 Size (#Members)`=="300-1,000", "medium",
+                                         ifelse(survey_data$`Q10 Size (#Members)`=="1,000-10,000", "large",
+                                                ifelse(survey_data$`Q10 Size (#Members)`=="More than 10,000", "large",
+                                                       survey_data$`Q10 Size (#Members)`)))))
+
+survey_data$Age <- ifelse(survey_data$`Q9 Age`=="Less than 5 years ago", "younger",
+                          ifelse(survey_data$`Q9 Age`=="5-10 years ago", "younger",
+                                 ifelse(survey_data$`Q9 Age`=="10-15 years ago", "older",
+                                        ifelse(survey_data$`Q9 Age`=="15+ years ago", "older",
+                                               survey_data$`Q9 Age`))))
+
+```
+
+```{r}
+priority<-gather(survey_data,"Q21.11 Rank Awareness" ,      "Q21.12 Rank Fam Edu",         "Q21.13 Rank Provider Edu"  ,  "Q21.14 Rank Support Fam" ,    "Q21.15 Rank Resource" ,       "Q21.16 Rank Research",key="Field",value="Rank")
+priority%<>%select("Q4 Organization Name" , "Frequency" , "Size","Age"  ,  "Field"  ,  "Rank")
+```
+
+## mean rank on the priorities between frequencies
+```{r}
+priority<-priority[!is.na(priority$Rank),]
+
+```
+
+```{r}
+priority%>%group_by(Frequency,Field)%>%summarise(meanrank=mean(Rank))%>%
+  arrange(desc(meanrank))->priorityrank
+priorityrank%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank%<>%select(-c("Question","Rank"))
+ggplot(data=priorityrank,aes(x=Field,y=meanrank,col=Frequency))+geom_point()+ggtitle("Mean  rank over Frequency")
+
+```
+
+```{r}
+priority%>%group_by(Size,Field)%>%summarise(meanrank=mean(Rank))%>%
+  arrange(desc(meanrank))->priorityrank2
+priorityrank2%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank2%<>%select(-c("Question","Rank"))
+ggplot(data=priorityrank2,aes(x=Field,y=meanrank,col=Size))+geom_point()+ggtitle("Mean  rank over Size")
+```
+
+```{r}
+priority%>%group_by(Age,Field)%>%summarise(meanrank=mean(Rank))%>%
+  arrange(desc(meanrank))->priorityrank3
+priorityrank3%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank3%<>%select(-c("Question","Rank"))
+ggplot(data=priorityrank3,aes(x=Field,y=meanrank,col=Age))+geom_point()+ggtitle("Mean  rank over Age")
+```
+
