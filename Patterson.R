@@ -1,6 +1,7 @@
 library(readxl)
 library(magrittr)
 library(ggplot2)
+library(nnet)
 
 survey_data <- read_excel("Patterson_Capstone_Data_Cat_Num_031021.xls")
 
@@ -52,3 +53,14 @@ ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Size))
 ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Age))
 
 
+
+# multinomial modeling
+
+model1 <- multinom(`Q26 Challenges` ~ Frequency + Age + Size, data = survey_data)
+model1
+
+
+unique(survey_data$`Q26 Challenges`)
+unique(survey_data$`Q23.4 No Research`)
+unique(survey_data$`Q23.1 Research Int/Ext`)
+unique(survey_data$`Q21.1 Rate Awareness`)
