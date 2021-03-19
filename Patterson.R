@@ -57,26 +57,34 @@ ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Age)) +
   facet_wrap(vars(Size))
 
 
-# histograms of challenges
-
-ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Frequency))
-ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Size))
-ggplot(data = survey_data) + geom_bar(aes(`Q26 Challenges`, fill = Age))
-
-
-
-# multinomial modeling
-
-model1 <- multinom(`Q26 Challenges` ~ Frequency + Age + Size, data = survey_data)
-model1
-
-
+# determining unique values -- issues with Q26 and Q23.4
 unique(survey_data$`Q26 Challenges`)
 unique(survey_data$`Q23.4 No Research`)
 unique(survey_data$`Q23.1 Research Int/Ext`)
 unique(survey_data$`Q21.1 Rate Awareness`)
 unique(survey_data$`Q21.11 Rank Awareness`)
 unique(survey_data$Priority)
+
+
+
+# histograms of Research Int/Ext
+
+ggplot(data = subset(survey_data, !is.na(`Q23.1 Research Int/Ext`) & !is.na(Frequency))) +
+  geom_bar(aes(`Q23.1 Research Int/Ext`, fill = Frequency)) +
+  theme(axis.text.x = element_text(angle = 0, vjust = 0.5, hjust=1))
+ggplot(data = subset(survey_data, !is.na(`Q23.1 Research Int/Ext`) & !is.na(Size))) +
+  geom_bar(aes(`Q23.1 Research Int/Ext`, fill = Size))
+ggplot(data = subset(survey_data, !is.na(`Q23.1 Research Int/Ext`) & !is.na(Age))) +
+  geom_bar(aes(`Q23.1 Research Int/Ext`, fill = Age))
+
+
+# experimenting with multinomial modeling
+
+model1 <- multinom(`Q26 Challenges` ~ Frequency + Age + Size, data = survey_data)
+model1
+
+
+
 
 model2 <- multinom(Priority ~ Frequency + Age + Size, data = survey_data)
 model2
