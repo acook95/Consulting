@@ -31,6 +31,17 @@ survey_data$Age <- ifelse(survey_data$`Q9 Age`=="Less than 5 years ago", "younge
                                                survey_data$`Q9 Age`))))
 
 
+# this code isn't working
+survey_data$Priority <- ifelse(survey_data$`Q21.11 Rank Awareness`== 1, "Awareness",
+                               ifelse(survey_data$`Q21.12 Rank Fam Edu` == 1, "Fam Edu",
+                                      ifelse(survey_data$`Q21.13 Rank Provider Edu` == 1, "Provider Edu",
+                                             ifelse(survey_data$`Q21.14 Rank Support Fam` == 1, "Support Fam",
+                                                    ifelse(survey_data$`Q21.15 Rank Resource` == 1, "Resource",
+                                                           ifelse(survey_data$`Q21.16 Rank Research` == 1, "Research",
+                                                                  ifelse(survey_data$`Q21.17 Rank Research Policy` == 1, "Research Policy",
+                                                                         ifelse(survey_data$`Q21.18 Rank Advocacy` == 1, "Advocacy", "None"))))))))
+
+
 # histograms of independent variables
 
 ggplot(data = survey_data) + geom_bar(aes(Age, fill = Size)) +
@@ -64,3 +75,9 @@ unique(survey_data$`Q26 Challenges`)
 unique(survey_data$`Q23.4 No Research`)
 unique(survey_data$`Q23.1 Research Int/Ext`)
 unique(survey_data$`Q21.1 Rate Awareness`)
+unique(survey_data$`Q21.11 Rank Awareness`)
+unique(survey_data$Priority)
+
+model2 <- multinom(Priority ~ Frequency + Age + Size, data = survey_data)
+model2
+
