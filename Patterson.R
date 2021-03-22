@@ -77,6 +77,21 @@ ggplot(data = survey_data) + geom_bar(aes(Frequency, fill = Age)) +
   facet_wrap(vars(Size))
 
 
+# scatterplots of independent variables
+
+ggplot(data = survey_data) + geom_jitter(aes(Age, Frequency), alpha = 0.5)
+
+ggplot(data = survey_data) + geom_jitter(aes(Age, Size), alpha = 0.5)
+
+ggplot(data = survey_data) + geom_jitter(aes(Frequency, Size), alpha = 0.5)
+
+cor(factor(survey_data$Age), factor(survey_data$Frequency), method = "pearson")
+
+chisq.test(survey_data$Age, survey_data$Size)
+chisq.test(survey_data$Age, survey_data$Frequency)
+chisq.test(survey_data$Frequency, survey_data$Size)
+
+
 # determining unique values -- issues with Q26 and Q23.4
 unique(survey_data$`Q26 Challenges`)
 unique(survey_data$`Q23.4 No Research`)
