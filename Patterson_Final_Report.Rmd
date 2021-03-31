@@ -1,0 +1,187 @@
+---
+title: "Final Report"
+author: "Zihuan Qiao, Anna Cook, Yinfeng Zhou, Zixuan Liu, Jiaheng Li"
+date: "3/25/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(magrittr)
+library(ggplot2)
+library(nnet)
+library(arm)
+library(dplyr)
+library(tidyverse)
+library(xlsx)
+library(tidyr)
+library(readxl)
+library(kableExtra)
+library(broom)
+library(caret)
+library(car)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+survey_data <- read_excel("Patterson_Capstone_Data_Cat_Num_031021.xls")
+
+
+## Bucketing independent variables
+survey_data$Frequency <- ifelse(survey_data$`Q6 Birth Frequency`=="More common than 1 in 2,000 births", "rare",
+                                ifelse(survey_data$`Q6 Birth Frequency`=="1 in 2,000-50,000 births", "rare",
+                                       ifelse(survey_data$`Q6 Birth Frequency`=="1 in 50,000-200,000 births", "rare",
+                                              ifelse(survey_data$`Q6 Birth Frequency`=="1 in 200,000-500,000 births", "ultra-rare",
+                                                     ifelse(survey_data$`Q6 Birth Frequency`=="1 in 500,000-1,000,000 births", "ultra-rare",
+                                                            ifelse(survey_data$`Q6 Birth Frequency`=="Fewer than 1 in 1,000,000 births", "ultra-rare",
+                                                                   survey_data$`Q6 Birth Frequency`))))))
+
+survey_data$Size <- ifelse(survey_data$`Q10 Size (#Members)`=="Fewer than 60", "small",
+                           ifelse(survey_data$`Q10 Size (#Members)`=="60-300", "small",
+                                  ifelse(survey_data$`Q10 Size (#Members)`=="300-1,000", "medium",
+                                         ifelse(survey_data$`Q10 Size (#Members)`=="1,000-10,000", "large",
+                                                ifelse(survey_data$`Q10 Size (#Members)`=="More than 10,000", "large",
+                                                       survey_data$`Q10 Size (#Members)`)))))
+
+survey_data$Age <- ifelse(survey_data$`Q9 Age`=="Less than 5 years ago", "younger",
+                          ifelse(survey_data$`Q9 Age`=="5-10 years ago", "younger",
+                                 ifelse(survey_data$`Q9 Age`=="10-15 years ago", "older",
+                                        ifelse(survey_data$`Q9 Age`=="15+ years ago", "older",
+                                               survey_data$`Q9 Age`))))
+
+survey_data$Research <- ifelse(survey_data$`Q23.1 Research Int/Ext`=="Supported research conducted by external entities", "External",
+                               ifelse(survey_data$`Q23.1 Research Int/Ext`=="Conducted own research (acted as the primary sponsor and owned the results)", "Internal",
+                                      survey_data$`Q23.1 Research Int/Ext`))
+
+survey_data$Budget <- ifelse(survey_data$`Q12 Budget`=="No budget", "Lowest",
+                             ifelse(survey_data$`Q12 Budget`=="$0 to $10,000", "Lowest",
+                                    ifelse(survey_data$`Q12 Budget`=="$10,000 to $50,000",  "Medium-Low",
+                                           ifelse(survey_data$`Q12 Budget`=="$50,000 to $100,000", "Medium-Low",
+                                                  ifelse(survey_data$`Q12 Budget`=="$100,000 to $200,000", "Medium-High",
+                                                         ifelse(survey_data$`Q12 Budget`=="$200,000 to $500,000", "Medium-High",
+                                                                ifelse(survey_data$`Q12 Budget`=="$500,000 to $1,000,000", "Highest",
+                                                                       ifelse(survey_data$`Q12 Budget`=="Over $1,000,000", "Highest",
+                                                                              survey_data$`Q12 Budget`))))))))
+
+survey_data%<>%subset(survey_data$Frequency!="Unknown")
+survey_data%<>%subset(survey_data$Age!="Unknown")
+survey_data%<>%subset(survey_data$Size!="Unknown")
+survey_data%<>%subset(survey_data$Budget!="Unknown")
+
+
+
+priority<-gather(survey_data,"Q21.11 Rank Awareness", "Q21.12 Rank Fam Edu",
+                 "Q21.13 Rank Provider Edu", "Q21.14 Rank Support Fam",
+                 "Q21.15 Rank Resource", "Q21.16 Rank Research",
+                 key="Field", value="Rank")
+priority%<>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age",
+                          "Field", "Rank", "Budget")
+
+
+survey_data%>%dplyr::select("Q4 Organization Name" , "Frequency" , "Size","Age" ,"Budget",c(31:46))->prior_bi
+prior_bi$`Q4 Organization Name`[is.na(prior_bi$`Q4 Organization Name`)]<-"Anonymous"
+prior_bi[,14:21][is.na(prior_bi[,14:21])]<-0
+prior_bi[,6:13][is.na(prior_bi[,6:13])]<-"NA"
+
+haverank<-prior_bi[which(apply(prior_bi,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))!="00000000"),]
+
+rank_final<-haverank
+rank_final["bicode"]<-ifelse(apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))=="00000000",apply(rank_final,1,function(x) paste0(ifelse(x[6:13]=="Extremely important",1,0),collapse="")),apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse="")))
+rank_final["priority"]<-apply(rank_final,1,function(x) switch(x[22],"10000000"="Awareness","01000000"="Fam Edu","00100000"="Provide Edu","00010000"="Support Fam","00001000"="Fam Resource","00000100"="Research","00000010"="Research Policy","00000001"="Advocacy"))
+rank_final$Age%<>%factor()
+rank_final$Frequency%<>%factor()
+rank_final$Size%<>%factor()
+rank_final$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High", "Medium-Low", "Lowest"))
+
+```
+
+## Introduction
+
+### Project Background
+  The client is researching rare disease advocacy organizations. In particular, she is interested in comparing organizations for rare vs. ultra-rare diseases along several different factors including funding, patient outreach, research, etc. in order to assess the organizations’ need for support. The main research questions is, how do the prevalence of diseases (rare vs. ultra-rare) and the size and age of the organization, affect the outcomes of the advocacy organization? (priorities, funding, patient outreach, research, etc.)? For example, the client may expect to find that organizations for less rare diseases may have more resources, better patient outreach, etc. while more rare diseases may have fewer resources available and may need more support. In addition to this main research focus, the client is interested in exploring the data more generally and looking for patterns that may arise. The client is seeking advice from the MSSP team about how to effectively recode variables as necessary, conduct an initial exploratory data analysis, and determine an appropriate regression model in order to make the comparisons of interest.
+
+
+### Variable Description and Data Processing
+  The client has collected survey data from 217 different organizations’ leaders or representatives, located in various locations worldwide, with one response per organization. The survey includes questions related to demographic data, budget/funding, disease prevalence, research efforts, etc.
+  
+  There are three independent and three dependent variables which our analyses will focus on. The independent variables are organization size, organization age, and disease frequency (1 case per x births). We will refer to these as Size, Age, and Frequency, respecively. The dependent variables are organizations' top priority, whether research efforts are handled internally or externally, and whether clinical trials are in progress for a therapy/treatment or not. We will refer to these as Priority, Research, and FDA Therapy, respectively. 
+
+The first step in processing the data was to bucket the independent variables into discrete levels based on the client's literature review and judgments. Size has three levels: Small (0-300 members), Medium (300-1000 members), and Large (1000+). Age has two levels: Older (10+ years) and Younger (< 10 years). Frequency has three levels: Rare (more frequent than 1 in 200,000 births), Ultra-Rare (less frequent than 1 in 200,000 births), and Unknown, although we are only focused on the Rare and Ultra-Rare levels for the sake of the analysis, so any responses of "Unknown" were removed.
+
+## EDA
+
+In order to get a general sense of the dataset, we began with an exploratory data analysis (EDA). First, we plotted histograms of the independent variables (Size, Age, and Frequency). The histograms are shown in Figure 1. From these plots, we can see that there is some imbalance in the data. First, it appears that the organizations for ultra-rare diseases tend to be smaller and younger, whereas the rare disease organizations are more uniformly represented across the different size and age categories. Second, … 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.show='hold', out.width="33%",fig.cap="Histograms of each combination of independent variables."}
+ggplot(data = subset(survey_data, !is.na(Size))) + geom_bar(aes(Age, fill = Size)) +
+  ggtitle("Histogram of Organization Age by Size")
+
+ggplot(data = subset(survey_data, !is.na(Frequency))) + geom_bar(aes(Frequency, fill = Age)) +
+  ggtitle("Histogram of Disease Frequency by Age")
+
+ggplot(data = subset(survey_data, !is.na(Size) & !is.na(Frequency))) + geom_bar(aes(Size, fill = Frequency)) +
+  ggtitle("Histogram of Org. Size by Frequency")
+```
+
+Next, we plotted histograms of the dependent variables of interest (Priority, Research, and FDA Therapy). From these plots, we can see further imbalance in the data (see Figures 2-4).  When looking at the priority variable (See Figure 4), we can see that many of the priorities are not equally represented by organizations in each of the frequency/age groups. The same holds true for the research and FDA therapy groups. This will be an important caveat to consider when interpreting results of the final analysis.  
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Histogram of internal research, external, or both, broken down by age and frequency."}
+ggplot(data = subset(survey_data, !is.na(Research) & !is.na(Frequency))) +
+  geom_bar(aes(Research, fill = Frequency)) +
+  ggtitle("Histogram of Type of Research") +
+  facet_wrap(vars(Age))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap= "Histogram of whether FDA clinical trials are in progress or not, broken down by age and frequency."}
+ggplot(data = subset(survey_data, !is.na(`Q25 FDA Thx`) & !is.na(Frequency))) +
+  geom_bar(aes(`Q25 FDA Thx`, fill = Frequency)) +
+  ggtitle("Histogram of FDA Therapy") +
+  xlab("FDA Therapy in Progress?") + facet_wrap(vars(Age))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Histogram of organizations' top priorities, broken down by age and frequency."}
+ggplot(data = subset(rank_final,!is.na(Frequency))) +
+  geom_bar(aes(priority, fill = Frequency), position = "dodge") +
+  ggtitle("Histogram of Organizations' Top Priority") +
+  theme(axis.text.x = element_text(angle = 0)) + facet_wrap(nrow = 2, vars(Age))
+```
+
+
+As the last step in the EDA, we conducted a series of chi-squared tests to check for independence among the predictors of interest. The results of the tests are displayed in Figure __. For all three pairs of predictors, the test shows p-values < 0.05, indicating that the variables are not independent at an alpha level of 0.05. Including correlated predictors in a regression model is problematic, so we must take this into account when fitting the models in the next step of the analysis. 
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```
+
+## Modeling
+  
+  Because the variables of interest are categorical with more than two levels, the most appropriate regression model is a multinomial model. We fit a series of multinomial models, one for each response variable, using the "nnet" package in R. As mentioned previously, chi-squared tests showed correlation between the predictor variables, so instead of including more than one of these predictors in the model, we chose to 
+
+### Top Priorities
+
+### Research Internal vs. External
+
+### FDA Therapy In Progress vs. Not In Progress
+
+## References
+
+Andrew Gelman and Yu-Sung Su (2020). arm: Data Analysis Using Regression and
+  Multilevel/Hierarchical Models. R package version 1.11-2.
+  https://CRAN.R-project.org/package=arm
+
+Hadley Wickham and Jennifer Bryan (2019). readxl: Read Excel Files. R package
+  version 1.3.1. https://CRAN.R-project.org/package=readxl
+
+H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New
+  York, 2016.
+  
+Stefan Milton Bache and Hadley Wickham (2020). magrittr: A Forward-Pipe
+  Operator for R. R package version 2.0.1.
+  https://CRAN.R-project.org/package=magrittr
+  
+Venables, W. N. & Ripley, B. D. (2002) Modern Applied Statistics with S.
+  Fourth Edition. Springer, New York. ISBN 0-387-95457-0
+
+  
+
+## Appendix

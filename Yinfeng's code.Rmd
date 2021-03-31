@@ -1,0 +1,140 @@
+---
+title: "Untitled"
+author: "Anna Cook"
+date: "3/22/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load("tidyverse","xlsx","magrittr","tidyr","readxl","nnet")
+```
+
+```{r}
+survey_data <- read_excel("Patterson_Capstone_Data_Cat_Num_031021.xls")
+View(survey_data)
+```
+
+```{r}
+## Bucketing independent variables
+survey_data$Frequency <- ifelse(survey_data$`Q6 Birth Frequency`=="More common than 1 in 2,000 births", "rare",
+                                ifelse(survey_data$`Q6 Birth Frequency`=="1 in 2,000-50,000 births", "rare",
+                                       ifelse(survey_data$`Q6 Birth Frequency`=="1 in 50,000-200,000 births", "rare",
+                                              ifelse(survey_data$`Q6 Birth Frequency`=="1 in 200,000-500,000 births", "ultra-rare",
+                                                     ifelse(survey_data$`Q6 Birth Frequency`=="1 in 500,000-1,000,000 births", "ultra-rare",
+                                                            ifelse(survey_data$`Q6 Birth Frequency`=="Fewer than 1 in 1,000,000 births", "ultra-rare",
+                                                                   survey_data$`Q6 Birth Frequency`))))))
+survey_data$Size <- ifelse(survey_data$`Q10 Size (#Members)`=="Fewer than 60", "small",
+                           ifelse(survey_data$`Q10 Size (#Members)`=="60-300", "small",
+                                  ifelse(survey_data$`Q10 Size (#Members)`=="300-1,000", "medium",
+                                         ifelse(survey_data$`Q10 Size (#Members)`=="1,000-10,000", "large",
+                                                ifelse(survey_data$`Q10 Size (#Members)`=="More than 10,000", "large",
+                                                       survey_data$`Q10 Size (#Members)`)))))
+survey_data$Age <- ifelse(survey_data$`Q9 Age`=="Less than 5 years ago", "younger",
+                          ifelse(survey_data$`Q9 Age`=="5-10 years ago", "younger",
+                                 ifelse(survey_data$`Q9 Age`=="10-15 years ago", "older",
+                                        ifelse(survey_data$`Q9 Age`=="15+ years ago", "older",
+                                               survey_data$`Q9 Age`))))
+```
+
+```{r}
+priority<-gather(survey_data,"Q21.11 Rank Awareness" ,      "Q21.12 Rank Fam Edu",         "Q21.13 Rank Provider Edu"  ,  "Q21.14 Rank Support Fam" ,    "Q21.15 Rank Resource" ,       "Q21.16 Rank Research",key="Field",value="Rank")
+priority%<>%select("Q4 Organization Name" , "Frequency" , "Size","Age"  ,  "Field"  ,  "Rank")
+```
+
+## mean rank on the priorities between frequencies
+```{r}
+priority<-priority[!is.na(priority$Rank),]
+```
+
+```{r}
+priority%>%group_by(Frequency,Field)%>%summarise(meanrank=mean(Rank),lower=meanrank-sd(Rank)/sqrt(n()),upper=meanrank+sd(Rank)/sqrt(n()))%>%
+  arrange(desc(meanrank))->priorityrank
+priorityrank%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank%<>%select(-c("Question","Rank"))
+priorityrank%<>%subset(Frequency!="Unknown")
+ggplot(data=priorityrank,aes(x=Field,y=meanrank,col=Frequency))+geom_point()+geom_pointrange(aes(ymin=lower,ymax=upper))+ggtitle("Mean  rank over Frequency")+theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=45, hjust=1)) 
+```
+
+
+```{r}
+priority%>%group_by(Size,Field)%>%summarise(meanrank=mean(Rank),lower=meanrank-sd(Rank)/sqrt(n()),upper=meanrank+sd(Rank)/sqrt(n()))%>%
+  arrange(desc(meanrank))->priorityrank2
+priorityrank2%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank2%<>%select(-c("Question","Rank"))
+priorityrank2%<>%subset(Size!="Unknown")
+ggplot(data=priorityrank2,aes(x=Field,y=meanrank,col=Size))+geom_point()+geom_pointrange(aes(ymin=lower,ymax=upper))+ggtitle("Mean  rank over Size")+theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=45, hjust=1)) 
+```
+
+```{r}
+priority%>%group_by(Age,Field)%>%summarise(meanrank=mean(Rank),lower=meanrank-sd(Rank)/sqrt(n()),upper=meanrank+sd(Rank)/sqrt(n()))%>%
+  arrange(desc(meanrank))->priorityrank3
+priorityrank3%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank3%<>%select(-c("Question","Rank"))
+ggplot(data=priorityrank3,aes(x=Field,y=meanrank,col=Age))+geom_point()+geom_pointrange(aes(ymin=lower,ymax=upper))+ggtitle("Mean  rank over Age")+theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=45, hjust=1)) 
+```
+
+
+```{r}
+survey_data%>%select("Q4 Organization Name" , "Frequency" , "Size","Age" ,c(31:46))->prior_bi
+prior_bi$`Q4 Organization Name`[is.na(prior_bi$`Q4 Organization Name`)]<-"Anonymous"
+prior_bi[,13:20][is.na(prior_bi[,13:20])]<-0
+prior_bi[,5:12][is.na(prior_bi[,5:12])]<-"NA"
+```
+
+##This method is not to be used
+```{r}
+# prior_bi$bi_code<-ifelse(apply(prior_bi,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))=="00000000",apply(prior_bi,1,function(x) paste0(ifelse(x[5:12]=="Extremely important",1,0),collapse="")),apply(prior_bi,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse="")))
+# prior_bi<-prior_bi[-which(prior_bi$bi_code=="00000000"),]
+```
+
+```{r}
+# prior_bi["de_code"]<-strtoi(prior_bi$bi_code,2L)
+```
+
+##Another method
+```{r}
+haverank<-prior_bi[which(apply(prior_bi,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))!="00000000"),]
+# norank<-prior_bi[-which(apply(prior_bi,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))!="00000000"),]
+# norank_1<-norank[which(norank$`Q21.1 Rate Awareness`=="Extremely important"),]
+# norank_1[,6:12]<-"NA"
+# norank_2<-norank[which(norank$`Q21.2 Rate Fam Edu`=="Extremely important"),]
+# norank_2[,c(5,7:12)]<-"NA"
+# norank_3<-norank[which(norank$`Q21.3 Rate Provider Edu`=="Extremely important"),]
+# norank_3[,c(5,6,8:12)]<-"NA"
+# norank_4<-norank[which(norank$`Q21.4 Rate Support Fam`=="Extremely important"),]
+# norank_4[,c(5:7,9:12)]<-"NA"
+# norank_5<-norank[which(norank$`Q21.5 Rate Fam Resource`=="Extremely important"),]
+# norank_5[,c(5:8,10:12)]<-"NA"
+# norank_6<-norank[which(norank$`Q21.6 Rate Research`=="Extremely important"),]
+# norank_6[,c(5:9,11:12)]<-"NA"
+# norank_7<-norank[which(norank$`Q21.7 Rate Research Policy`=="Extremely important"),]
+# norank_7[,c(5:10,12)]<-"NA"
+# norank_8<-norank[which(norank$`Q21.8 Rate Advocacy`=="Extremely important"),]
+# norank_8[,5:11]<-"NA"
+# rbind(norank_1,norank_2,norank_3,norank_4,norank_5,norank_6,norank_7,norank_8,haverank)->rank_final
+rank_final<-haverank
+rank_final["bicode"]<-ifelse(apply(rank_final,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))=="00000000",apply(rank_final,1,function(x) paste0(ifelse(x[5:12]=="Extremely important",1,0),collapse="")),apply(rank_final,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse="")))
+rank_final["priority"]<-apply(rank_final,1,function(x) switch(x[21],"10000000"="Awareness","01000000"="Fam Edu","00100000"="Provide Edu","00010000"="Support Fam","00001000"="Fam Resource","00000100"="Research","00000010"="Research Policy","00000001"="Advocacy"))
+rank_final[-which(rank_final$Frequency=="Unknown"),]->rank_final
+rank_final[-which(rank_final$Size=="Unknown"),]->rank_final
+```
+
+```{R}
+# rbind(norank_1,norank_2,norank_3,norank_4,norank_5,norank_6,norank_7,norank_8,haverank)->rank_final2
+# rank_final2["bicode"]<-ifelse(apply(rank_final2,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))=="00000000",apply(rank_final2,1,function(x) paste0(ifelse(x[5:12]=="Extremely important",1,0),collapse="")),apply(rank_final2,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse="")))
+# rank_final2["priority"]<-apply(rank_final2,1,function(x) switch(x[21],"10000000"="Awareness","01000000"="Fam Edu","00100000"="Provide Edu","00010000"="Support Fam","00001000"="Fam Resource","00000100"="Research","00000010"="Research Policy","00000001"="Advocacy"))
+# rank_final2[-which(rank_final2$Frequency=="Unknown"),]->rank_final2
+# rank_final2[-which(rank_final2$Size=="Unknown"),]->rank_final2
+```
+
+
+```{r}
+m1<-multinom(priority~Age+Size+Frequency,data=rank_final,family=binomial(link="logit"))
+summary(m1)
+# m2<-multinom(priority~Age+Size+Frequency,data=rank_final2,family=binomial(link="logit"))
+# summary(m2)
+```

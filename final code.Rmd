@@ -1,0 +1,290 @@
+---
+title: "EDA"
+author: "Yinfeng Zhou"
+date: "2021/3/15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load("tidyverse","xlsx","magrittr","tidyr","readxl","nnet","arm","kableExtra","broom","caret","car")
+```
+
+```{r}
+survey_data <- read_excel("Patterson_Capstone_Data_Cat_Num_031021.xls")
+```
+
+# Preparation
+## Data Cleaning
+```{r}
+## Bucketing independent variables
+survey_data$Frequency <- ifelse(survey_data$`Q6 Birth Frequency`=="More common than 1 in 2,000 births", "rare",
+                                ifelse(survey_data$`Q6 Birth Frequency`=="1 in 2,000-50,000 births", "rare",
+                                       ifelse(survey_data$`Q6 Birth Frequency`=="1 in 50,000-200,000 births", "rare",
+                                              ifelse(survey_data$`Q6 Birth Frequency`=="1 in 200,000-500,000 births", "ultra-rare",
+                                                     ifelse(survey_data$`Q6 Birth Frequency`=="1 in 500,000-1,000,000 births", "ultra-rare",
+                                                            ifelse(survey_data$`Q6 Birth Frequency`=="Fewer than 1 in 1,000,000 births", "ultra-rare",
+                                                                   survey_data$`Q6 Birth Frequency`))))))
+survey_data$Size <- ifelse(survey_data$`Q10 Size (#Members)`=="Fewer than 60", "small",
+                           ifelse(survey_data$`Q10 Size (#Members)`=="60-300", "small",
+                                  ifelse(survey_data$`Q10 Size (#Members)`=="300-1,000", "medium",
+                                         ifelse(survey_data$`Q10 Size (#Members)`=="1,000-10,000", "large",
+                                                ifelse(survey_data$`Q10 Size (#Members)`=="More than 10,000", "large",
+                                                       survey_data$`Q10 Size (#Members)`)))))
+survey_data$Age <- ifelse(survey_data$`Q9 Age`=="Less than 5 years ago", "younger",
+                          ifelse(survey_data$`Q9 Age`=="5-10 years ago", "younger",
+                                 ifelse(survey_data$`Q9 Age`=="10-15 years ago", "older",
+                                        ifelse(survey_data$`Q9 Age`=="15+ years ago", "older",
+                                               survey_data$`Q9 Age`))))
+survey_data$Budget <- ifelse(survey_data$`Q12 Budget`=="No budget" , "Lowest" ,
+                          ifelse(survey_data$`Q12 Budget`=="$0 to $10,000" , "Lowest" ,
+                                 ifelse(survey_data$`Q12 Budget`=="$10,000 to $50,000" ,  "Medium-Low" ,
+                                        ifelse(survey_data$`Q12 Budget`=="$50,000 to $100,000", "Medium-Low",
+                                               ifelse(survey_data$`Q12 Budget`=="$100,000 to $200,000", "Medium-High",
+                                                      ifelse(survey_data$`Q12 Budget`=="$200,000 to $500,000", "Medium-High",
+                                                             ifelse(survey_data$`Q12 Budget`=="$500,000 to $1,000,000", "Highest",
+                                                                    ifelse(survey_data$`Q12 Budget`=="Over $1,000,000", "Highest",
+                                               
+                                               survey_data$`Q12 Budget`))))))))
+```
+
+
+```{r}
+survey_data%<>%subset(survey_data$Frequency!="Unknown")
+survey_data%<>%subset(survey_data$Age!="Unknown")
+survey_data%<>%subset(survey_data$Size!="Unknown")
+survey_data%<>%subset(survey_data$Budget!="Unknown")
+```
+
+## Chisq.test
+```{R}
+survey_data$Age%<>%factor()
+survey_data$Frequency%<>%factor()
+survey_data$Size%<>%factor()
+survey_data$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High", "Medium-Low", "Lowest"))
+chisq.test(survey_data$Frequency,survey_data$Size)
+chisq.test(survey_data$Frequency,survey_data$Age)
+chisq.test(survey_data$Age,survey_data$Size)
+chisq.test(survey_data$Budget,survey_data$Size)
+chisq.test(survey_data$Budget,survey_data$Age)
+chisq.test(survey_data$Budget,survey_data$Frequency)
+```
+
+## Additional Cleaning for Modelling
+```{r}
+priority<-gather(survey_data,"Q21.11 Rank Awareness", "Q21.12 Rank Fam Edu", "Q21.13 Rank Provider Edu", "Q21.14 Rank Support Fam", "Q21.15 Rank Resource", "Q21.16 Rank Research",key="Field",value="Rank")
+priority%<>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age"  ,  "Field", "Rank", "Budget")
+```
+
+# EDA
+### mean rank on the priorities between frequencies
+```{r}
+priority<-priority[!is.na(priority$Rank),]
+```
+
+```{r}
+priority%>%group_by(Frequency,Field)%>%summarise(meanrank=mean(Rank),lower=meanrank-sd(Rank)/sqrt(n()),upper=meanrank+sd(Rank)/sqrt(n()))%>%
+  arrange(desc(meanrank))->priorityrank
+priorityrank%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank%<>%dplyr::select(-c("Question","Rank"))
+priorityrank%<>%subset(Frequency!="Unknown")
+ggplot(data=priorityrank,aes(x=Field,y=meanrank,col=Frequency))+geom_point()+geom_pointrange(aes(ymin=lower,ymax=upper))+ggtitle("Mean  rank over Frequency")+theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=45, hjust=1)) 
+```
+
+### mean rank on the priorities between sizes
+```{r}
+priority%>%group_by(Size,Field)%>%summarise(meanrank=mean(Rank),lower=meanrank-sd(Rank)/sqrt(n()),upper=meanrank+sd(Rank)/sqrt(n()))%>%
+  arrange(desc(meanrank))->priorityrank2
+priorityrank2%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank2%<>%dplyr::select(-c("Question","Rank"))
+priorityrank2%<>%subset(Size!="Unknown")
+ggplot(data=priorityrank2,aes(x=Field,y=meanrank,col=Size))+geom_point()+geom_pointrange(aes(ymin=lower,ymax=upper))+ggtitle("Mean  rank over Size")+theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=45, hjust=1)) 
+```
+### mean rank on the priorities between Ages
+```{r}
+priority%>%group_by(Age,Field)%>%summarise(meanrank=mean(Rank),lower=meanrank-sd(Rank)/sqrt(n()),upper=meanrank+sd(Rank)/sqrt(n()))%>%
+  arrange(desc(meanrank))->priorityrank3
+priorityrank3%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank3%<>%dplyr::select(-c("Question","Rank"))
+ggplot(data=priorityrank3,aes(x=Field,y=meanrank,col=Age))+geom_point()+geom_pointrange(aes(ymin=lower,ymax=upper))+ggtitle("Mean  rank over Age")+theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=45, hjust=1)) 
+```
+### mean rank on the priorities between Budget
+
+```{r}
+priority%>%group_by(Budget,Field)%>%summarise(meanrank=mean(Rank),lower=meanrank-sd(Rank)/sqrt(n()),upper=meanrank+sd(Rank)/sqrt(n()))%>%
+  arrange(desc(meanrank))->priorityrank4
+priorityrank4%<>%separate(Field,c("Question","Rank","Field"),sep=" ")
+priorityrank4%<>%dplyr::select(-c("Question","Rank"))
+ggplot(data=priorityrank4,aes(x=Field,y=meanrank,col=Budget))+geom_point()+geom_pointrange(aes(ymin=lower,ymax=upper))+ggtitle("Mean  rank over Budget")+theme(text = element_text(size=15),
+        axis.text.x = element_text(angle=45, hjust=1)) 
+```
+
+# Priority Modelling
+```{r}
+survey_data%>%dplyr::select("Q4 Organization Name" , "Frequency" , "Size","Age" ,"Budget",c(31:46))->prior_bi
+prior_bi$`Q4 Organization Name`[is.na(prior_bi$`Q4 Organization Name`)]<-"Anonymous"
+prior_bi[,14:21][is.na(prior_bi[,14:21])]<-0
+prior_bi[,6:13][is.na(prior_bi[,6:13])]<-"NA"
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+# prior_bi$bi_code<-ifelse(apply(prior_bi,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))=="00000000",apply(prior_bi,1,function(x) paste0(ifelse(x[5:12]=="Extremely important",1,0),collapse="")),apply(prior_bi,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse="")))
+# prior_bi<-prior_bi[-which(prior_bi$bi_code=="00000000"),]
+```
+
+```{r,eval=FALSE, echo=FALSE}
+# prior_bi["de_code"]<-strtoi(prior_bi$bi_code,2L)
+```
+
+```{r}
+haverank<-prior_bi[which(apply(prior_bi,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))!="00000000"),]
+# norank<-prior_bi[-which(apply(prior_bi,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))!="00000000"),]
+# norank_1<-norank[which(norank$`Q21.1 Rate Awareness`=="Extremely important"),]
+# norank_1[,6:12]<-"NA"
+# norank_2<-norank[which(norank$`Q21.2 Rate Fam Edu`=="Extremely important"),]
+# norank_2[,c(5,7:12)]<-"NA"
+# norank_3<-norank[which(norank$`Q21.3 Rate Provider Edu`=="Extremely important"),]
+# norank_3[,c(5,6,8:12)]<-"NA"
+# norank_4<-norank[which(norank$`Q21.4 Rate Support Fam`=="Extremely important"),]
+# norank_4[,c(5:7,9:12)]<-"NA"
+# norank_5<-norank[which(norank$`Q21.5 Rate Fam Resource`=="Extremely important"),]
+# norank_5[,c(5:8,10:12)]<-"NA"
+# norank_6<-norank[which(norank$`Q21.6 Rate Research`=="Extremely important"),]
+# norank_6[,c(5:9,11:12)]<-"NA"
+# norank_7<-norank[which(norank$`Q21.7 Rate Research Policy`=="Extremely important"),]
+# norank_7[,c(5:10,12)]<-"NA"
+# norank_8<-norank[which(norank$`Q21.8 Rate Advocacy`=="Extremely important"),]
+# norank_8[,5:11]<-"NA"
+# rbind(norank_1,norank_2,norank_3,norank_4,norank_5,norank_6,norank_7,norank_8,haverank)->rank_final
+rank_final<-haverank
+rank_final["bicode"]<-ifelse(apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))=="00000000",apply(rank_final,1,function(x) paste0(ifelse(x[6:13]=="Extremely important",1,0),collapse="")),apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse="")))
+rank_final["priority"]<-apply(rank_final,1,function(x) switch(x[22],"10000000"="Awareness","01000000"="Fam Edu","00100000"="Provide Edu","00010000"="Support Fam","00001000"="Fam Resource","00000100"="Research","00000010"="Research Policy","00000001"="Advocacy"))
+rank_final$Age%<>%factor()
+rank_final$Frequency%<>%factor()
+rank_final$Size%<>%factor()
+rank_final$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High", "Medium-Low", "Lowest"))
+```
+
+
+
+```{R, eval=FALSE, echo=FALSE}
+# rbind(norank_1,norank_2,norank_3,norank_4,norank_5,norank_6,norank_7,norank_8,haverank)->rank_final2
+# rank_final2["bicode"]<-ifelse(apply(rank_final2,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse=""))=="00000000",apply(rank_final2,1,function(x) paste0(ifelse(x[5:12]=="Extremely important",1,0),collapse="")),apply(rank_final2,1,function(x) paste0(ifelse(x[13:20]==1,1,0),collapse="")))
+# rank_final2["priority"]<-apply(rank_final2,1,function(x) switch(x[21],"10000000"="Awareness","01000000"="Fam Edu","00100000"="Provide Edu","00010000"="Support Fam","00001000"="Fam Resource","00000100"="Research","00000010"="Research Policy","00000001"="Advocacy"))
+# rank_final2[-which(rank_final2$Frequency=="Unknown"),]->rank_final2
+# rank_final2[-which(rank_final2$Size=="Unknown"),]->rank_final2
+```
+
+```{r}
+# m1<-multinom(priority~Age+Size+Frequency+Budget,data=rank_final,family=binomial(link="logit"))
+m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
+# m22<-multinom(priority~Age,data=rank_final,family=binomial(link="logit"))
+# m23<-multinom(priority~Size,data=rank_final,family=binomial(link="logit"))
+# m3<-multinom(priority~Age+Size+Frequency,data=rank_final,family=binomial(link="logit"))
+# m4<-multinom(priority~Frequency,data=rank_final,family=binomial(link="logit"))
+# # m2<-multinom(priority~Age+Size+Frequency,data=rank_final2,family=binomial(link="logit"))
+# summary(m2)
+# summary(m1)
+# summary(m2)
+# summary(m3)
+# summary(m4)
+```
+Generally speaking, models with `Budget` will dramatically lower down the residual deviance, and models without `Age` and `Size` will have lower AIC.
+
+## Model Evaluation
+```{r}
+# broom::tidy(m1, exponentiate = FALSE, conf.int = TRUE)->m1_table
+# m1_table %>% kable(digits = 3, format = "markdown")
+broom::tidy(m2, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown")
+# broom::tidy(m22, exponentiate = FALSE, conf.int = TRUE)->m22_table
+# m22_table %>% kable(digits = 2, format = "markdown")
+# broom::tidy(m23, exponentiate = FALSE, conf.int = TRUE)->m23_table
+# m23_table %>% kable(digits = 2, format = "markdown")
+# # 
+# broom::tidy(m3, exponentiate = FALSE, conf.int = TRUE)->m3_table
+# m2_table %>% kable(digits = 3, format = "markdown")
+# 
+# broom::tidy(m4, exponentiate = FALSE, conf.int = TRUE)->m4_table
+# m2_table %>% kable(digits = 3, format = "markdown")
+# pred<-fitted(m1)
+# resid<-residuals(m1)
+# par(mfrow=c(2,4))
+# for(i in 1:8){
+#   binnedplot(pred[,i],resid[,i],main="")
+#   title(colnames(pred)[i])
+# }
+pred2<-fitted(m2)
+resid2<-residuals(m2)
+par(mfrow=c(2,4))
+for(i in 1:8){
+  binnedplot(pred2[,i],resid2[,i],main="")
+  title(colnames(pred2)[i])
+}
+# pred22<-fitted(m22)
+# resid22<-residuals(m22)
+# par(mfrow=c(2,4))
+# for(i in 1:8){
+#   binnedplot(pred22[,i],resid22[,i],main="")
+#   title(colnames(pred22)[i])
+# }
+# pred23<-fitted(m23)
+# resid23<-residuals(m23)
+# par(mfrow=c(2,4))
+# for(i in 1:8){
+#   binnedplot(pred23[,i],resid23[,i],main="")
+#   title(colnames(pred23)[i])
+# }
+a<-c("rare","ultra-rare")
+b<-c("Highest","Medium-High","Medium-Low","Lowest")
+nd<- expand.grid(a,b)
+colnames(nd)<-c("Frequency","Budget")
+nd["class"]<-predict(m2,newdata=nd)
+nd%<>%arrange(desc(Frequency,Budget))
+nd
+# pred3<-fitted(m3)
+# resid3<-residuals(m3)
+# par(mfrow=c(2,4))
+# for(i in 1:8){
+#   binnedplot(pred3[,i],resid3[,i],main="")
+#   title(colnames(pred3)[i])
+# }
+# 
+# pred4<-fitted(m4)
+# resid4<-residuals(m4)
+# par(mfrow=c(2,4))
+# for(i in 1:8){
+#   binnedplot(pred4[,i],resid4[,i],main="")
+#   title(colnames(pred4)[i])
+# }
+```
+
+# Appendix
+
+```{r}
+size_pri<-rank_final%>%group_by(Size,priority)%>%summarise(num=n())%>%arrange(desc(num),.by_group=TRUE)
+ggplot(size_pri,aes(x=Size,y=num,fill=priority,group=num))+geom_bar(stat="identity",position="dodge")+ggtitle("#1 Priority of different sizes")+geom_text(aes(label=num),position=position_dodge(.9))
+```
+
+```{r}
+age_pri<-rank_final%>%group_by(Age,priority)%>%summarise(num=n())%>%arrange(desc(num),.by_group=TRUE)
+ggplot(age_pri,aes(x=Age,y=num,fill=priority,group=num))+geom_bar(stat="identity",position="dodge")+ggtitle("#1 Priority of different ages")+geom_text(aes(label=num),position=position_dodge(.9))
+```
+
+```{r}
+freq_pri<-rank_final%>%group_by(Frequency,priority)%>%summarise(num=n())%>%arrange(desc(num),.by_group=TRUE)
+ggplot(freq_pri,aes(x=Frequency,y=num,fill=priority,group=num))+geom_bar(stat="identity",position="dodge")+ggtitle("#1 Priority of different frequencies")+geom_text(aes(label=num),position=position_dodge(.9))
+```
+
+```{r}
+freq_pri<-rank_final%>%group_by(Budget,priority)%>%summarise(num=n())%>%arrange(desc(num),.by_group=TRUE)
+ggplot(freq_pri,aes(x=Budget,y=num,fill=priority,group=num))+geom_bar(stat="identity",position="dodge")+ggtitle("#1 Priority of different budgets")+geom_text(aes(label=num),position=position_dodge(.9))
+```
+
+```{r}
+agebysize<-survey_data%>%group_by(Age,Size)%>%summarise(num=n())%>%arrange(desc(num),.by_group=TRUE)
+ggplot(data = agebysize,aes(Age, y=num,fill = Size,group=num)) + geom_bar(position="dodge",stat="identity") +ggtitle("Histogram of Organization Age by Size")+geom_text(aes(label=num),position=position_dodge(.9))
+```
