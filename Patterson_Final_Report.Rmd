@@ -220,8 +220,6 @@ Venables, W. N. & Ripley, B. D. (2002) Modern Applied Statistics with S.
 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=""}
-m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
-
 
 broom::tidy(m2, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown")
 ```
