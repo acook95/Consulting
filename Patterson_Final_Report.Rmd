@@ -155,13 +155,35 @@ As the last step in the EDA, we conducted a series of chi-squared tests to check
 
 ## Modeling
   
-  Because the variables of interest are categorical with more than two levels, the most appropriate regression model is a multinomial model. We fit a series of multinomial models, one for each response variable, using the "nnet" package in R. As mentioned previously, chi-squared tests showed correlation between the predictor variables, so instead of including more than one of these predictors in the model, we chose to 
+  The client's variables of interest are categorical with more than two levels, so the most appropriate regression model to use for the analysis is a multinomial model. We fit a series of multinomial models, one for each response variable, using the "nnet" package in R. 
+  
+  To alleviate the problem of correlation between each pair of the predictors, we decided to remove some of them and to look for other useful predictors in the dataset. We found that Budget, a variable bucketed into four categories by the client, had no significant correlation with Frequency at the 0.05 alpha level, but significant correlation with Age and Size. Therefore, we added Budget as a predictor into the model along with Frequency, and removed Age and Size in order to eliminate the correlation between predictors.
 
 ### Top Priorities
 
+The first multinomial model we ran was using Priority as the response variable. As mentioned before, the predictors were Budget and Frequency. The result of the coefficient estimates shows that most of the combinations of predictor levels are significant at the 0.05 alpha level (see Figure ___ in the appendix for model output and residual plots). In addition, we did a point prediction to found out the most probable predicted categories under different conditions (see Figure 5). This shows that ultra-rare organizations are more likely to prioritize Research, while rare organizations are more likely to prioritize Family Education. Additionally, if the Budget is in the highest interval (> $500,000), the organization also has the highest probability of prioritizing Research. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="", fig.align='center'}
+
+a<-c("rare","ultra-rare")
+b<-c("Highest","Medium-High","Medium-Low","Lowest")
+nd<- expand.grid(a,b)
+colnames(nd)<-c("Frequency","Budget")
+nd["class"]<-predict(m2,newdata=nd)
+nd%<>%arrange(desc(Frequency,Budget))
+kable(nd)
+```
+
 ### Research Internal vs. External
 
+The second model we ran was using Research as the response variable. 
+
 ### FDA Therapy In Progress vs. Not In Progress
+
+
+## Conclusion
+
+
 
 ## References
 
@@ -185,3 +207,22 @@ Venables, W. N. & Ripley, B. D. (2002) Modern Applied Statistics with S.
   
 
 ## Appendix
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=""}
+m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
+
+
+broom::tidy(m2, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown")
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap=""}
+pred2<-fitted(m2)
+resid2<-residuals(m2)
+par(mfrow=c(2,4))
+for(i in 1:8){
+  binnedplot(pred2[,i],resid2[,i],main="")
+  title(colnames(pred2)[i])
+}
+```
+
