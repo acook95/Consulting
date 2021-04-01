@@ -63,19 +63,17 @@ survey_data$Budget <- ifelse(survey_data$`Q12 Budget`=="No budget", "Lowest",
                                                                        ifelse(survey_data$`Q12 Budget`=="Over $1,000,000", "Highest",
                                                                               survey_data$`Q12 Budget`))))))))
 
+
+
+survey_data$FDA <- ifelse(survey_data$`Q25.3 No FDA` == "There are trials in progress now", "In progress",
+                          ifelse(survey_data$`Q25.3 No FDA` == "If not in progress, please describe the barriers facing the FDA-approval process (i.e., lack of research)", "Not in progress", NA))
+
+
+
 survey_data%<>%subset(survey_data$Frequency!="Unknown")
 survey_data%<>%subset(survey_data$Age!="Unknown")
 survey_data%<>%subset(survey_data$Size!="Unknown")
 survey_data%<>%subset(survey_data$Budget!="Unknown")
-
-
-
-priority<-gather(survey_data,"Q21.11 Rank Awareness", "Q21.12 Rank Fam Edu",
-                 "Q21.13 Rank Provider Edu", "Q21.14 Rank Support Fam",
-                 "Q21.15 Rank Resource", "Q21.16 Rank Research",
-                 key="Field", value="Rank")
-priority%<>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age",
-                          "Field", "Rank", "Budget")
 
 
 survey_data%>%dplyr::select("Q4 Organization Name" , "Frequency" , "Size","Age" ,"Budget",c(31:46))->prior_bi
@@ -93,6 +91,27 @@ rank_final$Frequency%<>%factor()
 rank_final$Size%<>%factor()
 rank_final$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High", "Medium-Low", "Lowest"))
 
+
+data23.1 <- survey_data[, c(72,73,74,75,76)]
+names(data23.1) <- c("Frequency","Size", "Age", "Research","Budget")
+
+for(i in 1:dim(data23.1)[2]){
+  data23.1[,i][data23.1[,i] == ""] <- NA
+  data23.1[,i][data23.1[,i] == "Unknown"] <- NA
+}
+
+data23.1 <- na.omit(data23.1)
+
+
+data25.3 <- survey_data[, c(72,73,74,76,77)]
+names(data25.3) <- c("Frequency","Size", "Age","Budget","FDA")
+
+for(i in 1:dim(data25.3)[2]){
+  data25.3[,i][data25.3[,i] == ""] <- NA
+  data25.3[,i][data25.3[,i] == "Unknown"] <- NA
+}
+
+data25.3 <- na.omit(data25.3)
 ```
 
 ## Introduction
@@ -110,7 +129,7 @@ The first step in processing the data was to bucket the independent variables in
 
 ## EDA
 
-In order to get a general sense of the dataset, we began with an exploratory data analysis (EDA). First, we plotted histograms of the independent variables (Size, Age, and Frequency). The histograms are shown in Figure 1. From these plots, we can see that there is some imbalance in the data. First, it appears that the organizations for ultra-rare diseases tend to be smaller and younger, whereas the rare disease organizations are more uniformly represented across the different size and age categories. Second, … 
+In order to get a general sense of the dataset, we began with an exploratory data analysis (EDA). First, we plotted histograms of the independent variables (Size, Age, and Frequency). The histograms are shown in Figure 1. From these plots, we can see that there is some imbalance in the data. First, it appears that the organizations for ultra-rare diseases tend to be smaller and younger, whereas the rare disease organizations are more uniformly represented across the different size and age categories. There are almost twice as many rare disease organizations as ultra-rare. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.show='hold', out.width="33%",fig.cap="Histograms of each combination of independent variables."}
 ggplot(data = subset(survey_data, !is.na(Size))) + geom_bar(aes(Age, fill = Size)) +
@@ -163,10 +182,9 @@ chisq.test(survey_data$Age,survey_data$Size)
   To alleviate the problem of correlation between each pair of the predictors, we decided to remove some of them and to look for other useful predictors in the dataset. We found that Budget, a variable bucketed into four categories by the client, had no significant correlation with Frequency at the 0.05 alpha level, but significant correlation with Age and Size. Therefore, we added Budget as a predictor into the model along with Frequency, and removed Age and Size in order to eliminate the correlation between predictors.
 
 
-
 ### Top Priorities
 
-The first multinomial model we ran was using Priority as the response variable. As mentioned before, the predictors were Budget and Frequency. The result of the coefficient estimates shows that most of the combinations of predictor levels are significant at the 0.05 alpha level (see Figure ___ in the appendix for model output and residual plots). In addition, we did a point prediction to found out the most probable predicted categories under different conditions (see Figure 5). This shows that ultra-rare organizations are more likely to prioritize Research, while rare organizations are more likely to prioritize Family Education. Additionally, if the Budget is in the highest interval (> $500,000), the organization also has the highest probability of prioritizing Research. 
+The first multinomial model we ran was using Priority as the response variable. As mentioned before, the predictors were Budget and Frequency. The result of the coefficient estimates shows that most of the combinations of predictor levels are significant at the 0.05 alpha level (see Table 2 and Figure 5 in the appendix for model output and residual plots). In addition, we did a point prediction to find out the most probable predicted categories under different conditions (see Table 1). This shows that ultra-rare organizations are more likely to prioritize Research, while rare organizations are more likely to prioritize Family Education. Additionally, if the Budget is in the highest interval (> $500,000), the organization also has the highest probability of prioritizing Research. 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
 m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
@@ -185,15 +203,15 @@ kable(nd, caption = "Model results show that ultra-rare disease and high budget 
 
 ### Research Internal vs. External
 
-The second model we ran was using Research as the response variable, and Frequency and Budget as predictors. The model output and residual plots are shown in Figure __. All of the predictors are non-significant at the 0.05 alpha level, suggesting that there is no relationship between Frequency and Budget and the whether the organizations' research is conducted internally, externally, or both. 
+The second model we ran was using Research as the response variable, and Frequency and Budget as predictors. The model output and residual plots are shown in Table 3 and Figure 6 in the appendix. All of the predictors are non-significant at the 0.05 alpha level, suggesting that there is no relationship between Frequency and Budget and the whether the organizations' research is conducted internally, externally, or both. 
 
 ### FDA Therapy In Progress vs. Not In Progress
 
-The last multinomial model we ran was using the FDA therapy variable as the response, and Frequency and Budget as predictors. The model output and residual plots are shown in Figure __. From the output, we can see that...
+The last multinomial model we ran was using the FDA therapy variable as the response, and Frequency and Budget as predictors. The model output and residual plots are shown in Table 4 and Figure 7 in the appendix. From the output, we can see that again, all of the predictors are non-significant at the 0.05 alpha level, suggesting that there is no relationship between Frequency and Budget and whether an organization has FDA clinical trials in progress.
 
 ## Conclusion
 
-There are several conclusions we can draw from the results explained above. First, different groups of organizations appear to have some significant differences in their top priorities. In particular, the ultra-rare disease and high budget organizations tend to be more likely to prioritize research, whereas the rare disease organizations tend to be more likely to prioritize family education. Second, we found no significant relationship between Frequency and Budget, and the response variable Research. Thus, it appears that there are no differences in the likelihood of having internal or external research for organizations for rare vs. ultra-rare diseases or orgaizations with different budgets. And finally, our model suggests that the ultra-rare groups tend to be less likely to have FDA clinical trials in progress. 
+There are several conclusions we can draw from the results explained above. First, different groups of organizations appear to have some significant differences in their top priorities. In particular, the ultra-rare disease and high budget organizations tend to be more likely to prioritize research, whereas the rare disease organizations tend to be more likely to prioritize family education. Second, we found no significant relationship between Frequency and Budget, and the response variable Research. Thus, it appears that there are no differences in the likelihood of having internal or external research for organizations for rare vs. ultra-rare diseases or orgaizations with different budgets. And finally, there is no evidence of a relationship between the disease frequency and budget and the likelihood of an organization having FDA clinical trials in progress or not. 
 
 There are several limitations to consider when interpreting these results. First, as mentioned previously, we found the predictor variables of interest (Age, Size, and Frequency) to be correlated with one another, so we were only able to use Frequency in the model with one other predictor, Budget, which was not correlated with Frequency but was correlated with Age and Size. Fitting a model with a choice of only two predictors is not ideal; had more predictors been available, including more than two in the model may have led to a better fit. 
 
@@ -241,9 +259,45 @@ for(i in 1:8){
 ```
 
 
+```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
+mod23.1_1<-multinom(Research~Frequency+Budget,data=data23.1,family=binomial(link="logit"))
+```
+
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
+broom::tidy(mod23.1_1, exponentiate = FALSE, conf.int = TRUE) %>% kable(digits = 2, format = "markdown", caption = "Model output for Research response variable shows no significant coefficient estimates at alpha = 0.05.")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Residual plots for Research response variable"}
+
+pred23.1_1<-fitted(mod23.1_1)
+resid23.1_1<-residuals(mod23.1_1)
+par(mfrow=c(1,3))
+for(i in 1:3){
+  binnedplot(pred23.1_1[,i],resid23.1_1[,i],main="")
+  title(colnames(pred23.1_1)[i])
+}
 
 ```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
+mod25.1_6<-multinom(FDA~Frequency+Budget,data=data25.3,family=binomial(link="logit"))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+broom::tidy(mod25.1_6, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown", caption = "Model output for FDA Therapy response variable shows no significant coefficient estimates at alpha = 0.05")
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Residual plots for FDA Therapy response variable"}
+
+pred25.1_6<-fitted(mod25.1_6)
+resid25.1_6<-residuals(mod25.1_6)
+binnedplot(pred25.1_6,resid25.1_6)
+
+```
+
+
+
+
 
 
 

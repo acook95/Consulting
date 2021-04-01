@@ -54,6 +54,8 @@ survey_data$Budget <- ifelse(survey_data$`Q12 Budget`=="No budget", "Lowest",
                                                                        ifelse(survey_data$`Q12 Budget`=="Over $1,000,000", "Highest",
                                                                               survey_data$`Q12 Budget`))))))))
 
+survey_data$FDA <- ifelse(survey_data$`Q25.3 No FDA` == "There are trials in progress now", "In progress",
+                          ifelse(survey_data$`Q25.3 No FDA` == "If not in progress, please describe the barriers facing the FDA-approval process (i.e., lack of research)", "Not in progress", NA))
 
 
 # determining unique values -- issues with Q26 and Q23.4
@@ -72,13 +74,8 @@ survey_data%<>%subset(survey_data$Age!="Unknown")
 survey_data%<>%subset(survey_data$Size!="Unknown")
 survey_data%<>%subset(survey_data$Budget!="Unknown")
 
-# create new data frame to show orgs no. 1 priority -- data clenaing for Priority model
-priority<-gather(survey_data,"Q21.11 Rank Awareness", "Q21.12 Rank Fam Edu",
-                 "Q21.13 Rank Provider Edu", "Q21.14 Rank Support Fam",
-                 "Q21.15 Rank Resource", "Q21.16 Rank Research",
-                 key="Field", value="Rank")
-priority%<>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age",
-                          "Field", "Rank", "Budget")
+
+# create new data frame for orgs top priority/data cleaning for priority model
 survey_data%>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age","Budget",c(31:46))->prior_bi
 prior_bi$`Q4 Organization Name`[is.na(prior_bi$`Q4 Organization Name`)]<-"Anonymous"
 prior_bi[,14:21][is.na(prior_bi[,14:21])]<-0
@@ -96,8 +93,8 @@ rank_final$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High",
 
 
 # create new data frame/data cleaning for Research model
-data23.1 <- survey_data[, c(72,74,73,75,50)]
-names(data23.1) <- c("Frequency","Age", "Size", "Budget","Research")
+data23.1 <- survey_data[, c(72,73,74,75,76)]
+names(data23.1) <- c("Frequency","Size", "Age", "Research","Budget")
 
 for(i in 1:dim(data23.1)[2]){
   data23.1[,i][data23.1[,i] == ""] <- NA
@@ -106,11 +103,17 @@ for(i in 1:dim(data23.1)[2]){
 
 data23.1 <- na.omit(data23.1)
 
-data23.1[,5]<-apply(data23.1,1,function(x) switch(x[5],"Both"="Internal & External","Conducted own research (acted as the primary sponsor and owned the results)"="Internal","Supported research conducted by external entities"="External"))
 
-data23.1$Budget <- factor(data23.1$Budget, levels = c('Lowest','Medium-Low','Medium-High','Highest'))
-data23.1$Age <- factor(data23.1$Age, levels = c('younger','older'))
-data23.1$Frequency <- factor(data23.1$Frequency, levels = c('rare','ultra-rare'))
+# creating new data frame / data cleaning for FDA variable
+data25.3 <- survey_data[, c(72,73,74,76,77)]
+names(data25.3) <- c("Frequency","Size", "Age","Budget","FDA")
+
+for(i in 1:dim(data25.3)[2]){
+  data25.3[,i][data25.3[,i] == ""] <- NA
+  data25.3[,i][data25.3[,i] == "Unknown"] <- NA
+}
+
+data25.3 <- na.omit(data25.3)
 
 
 
@@ -222,6 +225,7 @@ nd<- expand.grid(a,b)
 colnames(nd)<-c("Frequency","Budget")
 nd["class"]<-predict(mod23.1_1,newdata=nd)
 nd%<>%arrange(desc(Frequency,Budget))
+nd
 
 pred23.1_1<-fitted(mod23.1_1)
 resid23.1_1<-residuals(mod23.1_1)
@@ -229,7 +233,7 @@ binnedplot(pred23.1_1,resid23.1_1)
 
 pred23.1_1<-fitted(mod23.1_1)
 resid23.1_1<-residuals(mod23.1_1)
-par(mfrow=c(2,4))
+par(mfrow=c(1,3))
 for(i in 1:3){
   binnedplot(pred23.1_1[,i],resid23.1_1[,i],main="")
   title(colnames(pred23.1_1)[i])
@@ -237,19 +241,27 @@ for(i in 1:3){
 
 # response variable: FDA therapy
 
+mod25.1_6<-multinom(FDA~Frequency+Budget,data=data25.3,family=binomial(link="logit"))
+summary(mod25.1_6)
+
+broom::tidy(mod25.1_6, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown")
 
 
+mod25.1_2<-multinom(FDA~Frequency,data=data25.3,family=binomial(link="logit"))
+summary(mod25.1_2)
 
+mod25.1_4<-multinom(FDA~Budget,data25.3,family=binomial(link="logit"))
+summary(mod25.1_4)
 
+pred25.1_6<-fitted(mod25.1_6)
+resid25.1_6<-residuals(mod25.1_6)
+binnedplot(pred25.1_6,resid25.1_6)
+par(mfrow=c(1,2))
 
-
-
-
-tb_freq <- xtabs(~ priority + Frequency, data = rank_final) # cross-tabulate
-# summarize counts
-prop.table(tb_freq, 1) # proportions add to one row-wise
-library(vcd)
-mosaic(tb_freq)
+for(i in 1:2){
+  binnedplot(pred25.1_6[,i],resid25.1_6[,i],main="")
+  title(colnames(pred25.1_6)[i])
+}
 
 
 
