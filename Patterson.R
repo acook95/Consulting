@@ -116,7 +116,6 @@ ggplot(data = survey_data) + geom_jitter(aes(Age, Frequency), alpha = 0.5)
 ggplot(data = survey_data) + geom_jitter(aes(Age, Size), alpha = 0.5)
 ggplot(data = survey_data) + geom_jitter(aes(Frequency, Size), alpha = 0.5)
 
-
 # chi-square tests for independence
 survey_data$Age%<>%factor()
 survey_data$Frequency%<>%factor()
@@ -128,7 +127,6 @@ chisq.test(survey_data$Age,survey_data$Size)
 chisq.test(survey_data$Budget,survey_data$Size)
 chisq.test(survey_data$Budget,survey_data$Age)
 chisq.test(survey_data$Budget,survey_data$Frequency)
-
 
 # histograms of Research Int/Ext
 ggplot(data = subset(survey_data, !is.na(Research) & !is.na(Frequency))) +
@@ -142,7 +140,6 @@ ggplot(data = subset(survey_data, !is.na(Research) & !is.na(Size))) +
 ggplot(data = subset(survey_data, !is.na(Research) & !is.na(Age))) +
   geom_bar(aes(Research, fill = Age))
 
-
 # histograms of Priorities
 ggplot(data = subset(rank_final,!is.na(Frequency))) + geom_bar(aes(priority)) +
   ggtitle("Histogram of Organizations' Top Priority") +
@@ -152,7 +149,6 @@ ggplot(data = subset(rank_final,!is.na(Frequency))) +
   geom_bar(aes(priority, fill = Frequency), position = "dodge") +
   ggtitle("Histogram of Organizations' Top Priority") +
   theme(axis.text.x = element_text(angle = 0)) + facet_wrap(nrow = 2, vars(Age))
-
 
 # histograms of FDA Therapy
 ggplot(data = subset(survey_data, !is.na(`Q25 FDA Thx`) & !is.na(Frequency))) +

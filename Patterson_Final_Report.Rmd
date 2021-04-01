@@ -165,6 +165,9 @@ The first multinomial model we ran was using Priority as the response variable. 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="", fig.align='center'}
 
+m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
+
+
 a<-c("rare","ultra-rare")
 b<-c("Highest","Medium-High","Medium-Low","Lowest")
 nd<- expand.grid(a,b)
@@ -176,14 +179,21 @@ kable(nd)
 
 ### Research Internal vs. External
 
-The second model we ran was using Research as the response variable, and Frequency and Budget as predictors. The results are shown in Figure __. 
+The second model we ran was using Research as the response variable, and Frequency and Budget as predictors. The model output and residual plots are shown in Figure __. From the output, we can see that all of the predictors are non-significant at the 0.05 alpha level, suggesting that there is no relationship between Frequency and Budget and the whether the organizations' research is conducted internally, externally, or both. 
 
 ### FDA Therapy In Progress vs. Not In Progress
 
+The last multinomial model we ran was using the FDA therapy variable as the response, and Frequency and Budget as predictors. The model output and residual plots are shown in Figure __. From the output, we can see that...
 
 ## Conclusion
 
+There are several conclusions we can draw from the results explained above. First, different groups of organizations appear to have some significant differences in their top priorities. In particular, the ultra-rare disease and high budget organizations tend to be more likely to prioritize research, whereas the rare disease organizations tend to be more likely to prioritize family education. Second, we found no significant relationship between Frequency and Budget, and the response variable Research. Thus, it appears that there are no differences in the likelihood of having internal or external research for organizations for rare vs. ultra-rare diseases or orgaizations with different budgets. And finally, our model suggests that the ultra-rare groups tend to be less likely to have FDA clinical trials in progress. 
 
+There are several limitations to consider when interpreting these results. First, as mentioned previously, we found the predictor variables of interest (Age, Size, and Frequency) to be correlated with one another, so we were only able to use Frequency in the model with one other predictor, Budget, which was not correlated with Frequency but was correlated with Age and Size. Fitting a model with a choice of only two predictors is not ideal; had more predictors been available, including more than two in the model may have led to a better fit. 
+
+Second, the exploratory data analysis showed some imbalance in the dataset. For example, when looking at the histograms of the organizations' top priorities, we can see that not every priority was represented as a top priority for all of the predictor variable combinations. The issue of imbalance holds true for the other response variables as well. This makes it difficult for the models to accurately reflect patterns in the dataset.
+
+Lastly, there is a concern that this analysis has fairly low power. The full dataset contains 217 responses, but based on the structure of some of the survey questions, some questions have even fewer responses. For example, the FDA therapy question only pertains to organizations who responded saying that there currently is no FDA approved therapy for that disease. Therefore, any organizations who do have a FDA therapy were not asked about whether clinical trials were in progress or not, making the sample size for this question much smaller than the original 217 respondents. Because of these three important limitations, the results must be taken and interpreted with caution. 
 
 ## References
 
