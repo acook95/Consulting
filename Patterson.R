@@ -16,7 +16,9 @@ library(car)
 survey_data <- read_excel("Patterson_Capstone_Data_Cat_Num_031021.xls")
 
 
-## Bucketing independent variables
+### INITIAL DATA PROCESSING ###
+
+# Bucketing independent variables
 survey_data$Frequency <- ifelse(survey_data$`Q6 Birth Frequency`=="More common than 1 in 2,000 births", "rare",
                                 ifelse(survey_data$`Q6 Birth Frequency`=="1 in 2,000-50,000 births", "rare",
                                        ifelse(survey_data$`Q6 Birth Frequency`=="1 in 50,000-200,000 births", "rare",
@@ -54,21 +56,6 @@ survey_data$Budget <- ifelse(survey_data$`Q12 Budget`=="No budget", "Lowest",
 
 
 
-# code below isn't working
-# survey_data$Priority <- ifelse(survey_data$`Q21.11 Rank Awareness`== 1, "Awareness",
-#                                ifelse(survey_data$`Q21.12 Rank Fam Edu` == 1, "Fam Edu",
-#                                       ifelse(survey_data$`Q21.13 Rank Provider Edu` == 1, "Provider Edu",
-#                                              ifelse(survey_data$`Q21.14 Rank Support Fam` == 1, "Support Fam",
-#                                                     ifelse(survey_data$`Q21.15 Rank Resource` == 1, "Resource",
-#                                                            ifelse(survey_data$`Q21.16 Rank Research` == 1, "Research",
-#                                                                   ifelse(survey_data$`Q21.17 Rank Research Policy` == 1, "Research Policy",
-#                                                                          ifelse(survey_data$`Q21.18 Rank Advocacy` == 1, "Advocacy", "None"))))))))
-#
-
-
-
-
-
 # determining unique values -- issues with Q26 and Q23.4
 unique(survey_data$`Q26 Challenges`)
 unique(survey_data$`Q23.4 No Research`)
@@ -77,9 +64,7 @@ unique(survey_data$`Q21.1 Rate Awareness`)
 unique(survey_data$`Q21.11 Rank Awareness`)
 unique(survey_data$`Q21.17 Rank Research Policy`)
 unique(survey_data$`Q21.18 Rank Advocacy`)
-#unique(survey_data$Priority)
 unique(survey_data$`Q25 FDA Thx`)
-
 
 # remove unknowns
 survey_data%<>%subset(survey_data$Frequency!="Unknown")
@@ -87,6 +72,30 @@ survey_data%<>%subset(survey_data$Age!="Unknown")
 survey_data%<>%subset(survey_data$Size!="Unknown")
 survey_data%<>%subset(survey_data$Budget!="Unknown")
 
+# create new data frame to show orgs no. 1 priority
+priority<-gather(survey_data,"Q21.11 Rank Awareness", "Q21.12 Rank Fam Edu",
+                 "Q21.13 Rank Provider Edu", "Q21.14 Rank Support Fam",
+                 "Q21.15 Rank Resource", "Q21.16 Rank Research",
+                 key="Field", value="Rank")
+priority%<>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age",
+                          "Field", "Rank", "Budget")
+survey_data%>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age","Budget",c(31:46))->prior_bi
+prior_bi$`Q4 Organization Name`[is.na(prior_bi$`Q4 Organization Name`)]<-"Anonymous"
+prior_bi[,14:21][is.na(prior_bi[,14:21])]<-0
+prior_bi[,6:13][is.na(prior_bi[,6:13])]<-"NA"
+
+haverank<-prior_bi[which(apply(prior_bi,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))!="00000000"),]
+
+rank_final<-haverank
+rank_final["bicode"]<-ifelse(apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))=="00000000",apply(rank_final,1,function(x) paste0(ifelse(x[6:13]=="Extremely important",1,0),collapse="")),apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse="")))
+rank_final["priority"]<-apply(rank_final,1,function(x) switch(x[22],"10000000"="Awareness","01000000"="Fam Edu","00100000"="Provide Edu","00010000"="Support Fam","00001000"="Fam Resource","00000100"="Research","00000010"="Research Policy","00000001"="Advocacy"))
+rank_final$Age%<>%factor()
+rank_final$Frequency%<>%factor()
+rank_final$Size%<>%factor()
+rank_final$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High", "Medium-Low", "Lowest"))
+
+
+### EDA ###
 
 # histograms of independent variables
 ggplot(data = subset(survey_data, !is.na(Size))) + geom_bar(aes(Age, fill = Size)) +
@@ -107,12 +116,8 @@ ggplot(data = survey_data) + geom_jitter(aes(Age, Frequency), alpha = 0.5)
 ggplot(data = survey_data) + geom_jitter(aes(Age, Size), alpha = 0.5)
 ggplot(data = survey_data) + geom_jitter(aes(Frequency, Size), alpha = 0.5)
 
-# chi-square tests for independence
-chisq.test(survey_data$Age, survey_data$Size)
-chisq.test(survey_data$Age, survey_data$Frequency)
-chisq.test(survey_data$Frequency, survey_data$Size)
 
-# more chi-sq tests
+# chi-square tests for independence
 survey_data$Age%<>%factor()
 survey_data$Frequency%<>%factor()
 survey_data$Size%<>%factor()
@@ -149,7 +154,6 @@ ggplot(data = subset(rank_final,!is.na(Frequency))) +
   theme(axis.text.x = element_text(angle = 0)) + facet_wrap(nrow = 2, vars(Age))
 
 
-
 # histograms of FDA Therapy
 ggplot(data = subset(survey_data, !is.na(`Q25 FDA Thx`) & !is.na(Frequency))) +
   geom_bar(aes(`Q25 FDA Thx`, fill = Frequency)) +
@@ -162,33 +166,10 @@ ggplot(data = subset(survey_data, !is.na(`Q25 FDA Thx`) & !is.na(Age))) +
   xlab("FDA Therapy in Progress?")
 
 
-# more cleaning for modeling
-priority<-gather(survey_data,"Q21.11 Rank Awareness", "Q21.12 Rank Fam Edu",
-                 "Q21.13 Rank Provider Edu", "Q21.14 Rank Support Fam",
-                 "Q21.15 Rank Resource", "Q21.16 Rank Research",
-                 key="Field", value="Rank")
-priority%<>%dplyr::select("Q4 Organization Name", "Frequency", "Size","Age",
-                          "Field", "Rank", "Budget")
+### MODELING ###
 
-
-survey_data%>%dplyr::select("Q4 Organization Name" , "Frequency" , "Size","Age" ,"Budget",c(31:46))->prior_bi
-prior_bi$`Q4 Organization Name`[is.na(prior_bi$`Q4 Organization Name`)]<-"Anonymous"
-prior_bi[,14:21][is.na(prior_bi[,14:21])]<-0
-prior_bi[,6:13][is.na(prior_bi[,6:13])]<-"NA"
-
-haverank<-prior_bi[which(apply(prior_bi,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))!="00000000"),]
-
-rank_final<-haverank
-rank_final["bicode"]<-ifelse(apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse=""))=="00000000",apply(rank_final,1,function(x) paste0(ifelse(x[6:13]=="Extremely important",1,0),collapse="")),apply(rank_final,1,function(x) paste0(ifelse(x[14:21]==1,1,0),collapse="")))
-rank_final["priority"]<-apply(rank_final,1,function(x) switch(x[22],"10000000"="Awareness","01000000"="Fam Edu","00100000"="Provide Edu","00010000"="Support Fam","00001000"="Fam Resource","00000100"="Research","00000010"="Research Policy","00000001"="Advocacy"))
-rank_final$Age%<>%factor()
-rank_final$Frequency%<>%factor()
-rank_final$Size%<>%factor()
-rank_final$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High", "Medium-Low", "Lowest"))
-
-
+# response variable: Priority
 m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
-
 
 broom::tidy(m2, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown")
 
@@ -208,25 +189,17 @@ nd["class"]<-predict(m2,newdata=nd)
 nd%<>%arrange(desc(Frequency,Budget))
 nd
 
+# response variable: research
+
+
+
+
+# response variable: FDA therapy
 
 
 
 
 
-# experimenting with multinomial modeling
-
-model1 <- multinom(priority ~ Frequency + Age + Size, data = rank_final, family = binomial(link = "logit"))
-summary(model1)
-tidy(model1, exponentiate = FALSE)
-
-plot(fitted(model1), resid(model1))
-binnedplot(fitted(model1), resid(model1))
-
-model3 <- multinom(Research ~ Frequency + Age + Size, data = subset(survey_data, !is.na(Research)), family = binomial(link = "logit"))
-model3
-summary(model3)
-
-plot(fitted(model3), resid(model3))
 
 
 
@@ -252,9 +225,9 @@ citation(package = "arm")
 
 
 
-# Appendix
+### APPENDIX ###
 
-
+# more plots
 size_pri<-rank_final%>%group_by(Size,priority)%>%summarise(num=n())%>%arrange(desc(num),.by_group=TRUE)
 ggplot(size_pri,aes(x=Size,y=num,fill=priority,group=num))+geom_bar(stat="identity",position="dodge")+ggtitle("#1 Priority of different sizes")+geom_text(aes(label=num),position=position_dodge(.9))
 

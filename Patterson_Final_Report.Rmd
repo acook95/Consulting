@@ -176,7 +176,7 @@ kable(nd)
 
 ### Research Internal vs. External
 
-The second model we ran was using Research as the response variable. 
+The second model we ran was using Research as the response variable, and Frequency and Budget as predictors. The results are shown in Figure __. 
 
 ### FDA Therapy In Progress vs. Not In Progress
 
