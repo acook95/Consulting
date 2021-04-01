@@ -1,7 +1,7 @@
 ---
-title: "Final Report"
+title: "Rare Disease Advocacy Organization Project Final Report"
 author: "Zihuan Qiao, Anna Cook, Yinfeng Zhou, Zixuan Liu, Jiaheng Li"
-date: "3/25/2021"
+date: "4/1/2021"
 output: pdf_document
 ---
 
@@ -147,10 +147,13 @@ ggplot(data = subset(rank_final,!is.na(Frequency))) +
 ```
 
 
-As the last step in the EDA, we conducted a series of chi-squared tests to check for independence among the predictors of interest. The results of the tests are displayed in Figure __. For all three pairs of predictors, the test shows p-values < 0.05, indicating that the variables are not independent at an alpha level of 0.05. Including correlated predictors in a regression model is problematic, so we must take this into account when fitting the models in the next step of the analysis. 
+As the last step in the EDA, we conducted a series of chi-squared tests to check for independence among the predictors of interest. The results of the tests are displayed below. For all three pairs of predictors, the test shows p-values < 0.05, indicating that the variables are not independent at an alpha level of 0.05. Including correlated predictors in a regression model is problematic, so we must take this into account when fitting the models in the next step of the analysis. 
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.align="center"}
+chisq.test(survey_data$Frequency,survey_data$Size)
+chisq.test(survey_data$Frequency,survey_data$Age)
+chisq.test(survey_data$Age,survey_data$Size)
 ```
 
 ## Modeling
@@ -159,14 +162,17 @@ As the last step in the EDA, we conducted a series of chi-squared tests to check
   
   To alleviate the problem of correlation between each pair of the predictors, we decided to remove some of them and to look for other useful predictors in the dataset. We found that Budget, a variable bucketed into four categories by the client, had no significant correlation with Frequency at the 0.05 alpha level, but significant correlation with Age and Size. Therefore, we added Budget as a predictor into the model along with Frequency, and removed Age and Size in order to eliminate the correlation between predictors.
 
+
+
 ### Top Priorities
 
 The first multinomial model we ran was using Priority as the response variable. As mentioned before, the predictors were Budget and Frequency. The result of the coefficient estimates shows that most of the combinations of predictor levels are significant at the 0.05 alpha level (see Figure ___ in the appendix for model output and residual plots). In addition, we did a point prediction to found out the most probable predicted categories under different conditions (see Figure 5). This shows that ultra-rare organizations are more likely to prioritize Research, while rare organizations are more likely to prioritize Family Education. Additionally, if the Budget is in the highest interval (> $500,000), the organization also has the highest probability of prioritizing Research. 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="", fig.align='center'}
-
+```{r, echo=FALSE, warning=FALSE, message=FALSE, include=FALSE}
 m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
+```
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 a<-c("rare","ultra-rare")
 b<-c("Highest","Medium-High","Medium-Low","Lowest")
@@ -174,12 +180,12 @@ nd<- expand.grid(a,b)
 colnames(nd)<-c("Frequency","Budget")
 nd["class"]<-predict(m2,newdata=nd)
 nd%<>%arrange(desc(Frequency,Budget))
-kable(nd)
+kable(nd, caption = "Model results show that ultra-rare disease and high budget organizations are more likely to prioritize research, while rare disease organizations are more likely to prioritize family education.", align = "c")
 ```
 
 ### Research Internal vs. External
 
-The second model we ran was using Research as the response variable, and Frequency and Budget as predictors. The model output and residual plots are shown in Figure __. From the output, we can see that all of the predictors are non-significant at the 0.05 alpha level, suggesting that there is no relationship between Frequency and Budget and the whether the organizations' research is conducted internally, externally, or both. 
+The second model we ran was using Research as the response variable, and Frequency and Budget as predictors. The model output and residual plots are shown in Figure __. All of the predictors are non-significant at the 0.05 alpha level, suggesting that there is no relationship between Frequency and Budget and the whether the organizations' research is conducted internally, externally, or both. 
 
 ### FDA Therapy In Progress vs. Not In Progress
 
@@ -219,12 +225,12 @@ Venables, W. N. & Ripley, B. D. (2002) Modern Applied Statistics with S.
 ## Appendix
 
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap=""}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 
-broom::tidy(m2, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown")
+broom::tidy(m2, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown", caption = "Model output for Priority response variable. Many of the coefficient estimates are statistically significant at alpha = 0.05.", align = "c")
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap=""}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Residual plots for Priority model. These plots show that some priorities have very few data points. For the priorities with relatively more data points, the model appears to be fitting fairly well."}
 pred2<-fitted(m2)
 resid2<-residuals(m2)
 par(mfrow=c(2,4))
@@ -233,4 +239,12 @@ for(i in 1:8){
   title(colnames(pred2)[i])
 }
 ```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+```
+
+
+
 

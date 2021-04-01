@@ -72,7 +72,7 @@ survey_data%<>%subset(survey_data$Age!="Unknown")
 survey_data%<>%subset(survey_data$Size!="Unknown")
 survey_data%<>%subset(survey_data$Budget!="Unknown")
 
-# create new data frame to show orgs no. 1 priority
+# create new data frame to show orgs no. 1 priority -- data clenaing for Priority model
 priority<-gather(survey_data,"Q21.11 Rank Awareness", "Q21.12 Rank Fam Edu",
                  "Q21.13 Rank Provider Edu", "Q21.14 Rank Support Fam",
                  "Q21.15 Rank Resource", "Q21.16 Rank Research",
@@ -93,6 +93,25 @@ rank_final$Age%<>%factor()
 rank_final$Frequency%<>%factor()
 rank_final$Size%<>%factor()
 rank_final$Budget%<>%factor(ordered =FALSE, levels = c("Highest", "Medium-High", "Medium-Low", "Lowest"))
+
+
+# create new data frame/data cleaning for Research model
+data23.1 <- survey_data[, c(72,74,73,75,50)]
+names(data23.1) <- c("Frequency","Age", "Size", "Budget","Research")
+
+for(i in 1:dim(data23.1)[2]){
+  data23.1[,i][data23.1[,i] == ""] <- NA
+  data23.1[,i][data23.1[,i] == "Unknown"] <- NA
+}
+
+data23.1 <- na.omit(data23.1)
+
+data23.1[,5]<-apply(data23.1,1,function(x) switch(x[5],"Both"="Internal & External","Conducted own research (acted as the primary sponsor and owned the results)"="Internal","Supported research conducted by external entities"="External"))
+
+data23.1$Budget <- factor(data23.1$Budget, levels = c('Lowest','Medium-Low','Medium-High','Highest'))
+data23.1$Age <- factor(data23.1$Age, levels = c('younger','older'))
+data23.1$Frequency <- factor(data23.1$Frequency, levels = c('rare','ultra-rare'))
+
 
 
 ### EDA ###
@@ -139,6 +158,11 @@ ggplot(data = subset(survey_data, !is.na(Research) & !is.na(Size))) +
 
 ggplot(data = subset(survey_data, !is.na(Research) & !is.na(Age))) +
   geom_bar(aes(Research, fill = Age))
+
+ggplot(data23.1, aes(x=Research, fill=Frequency))+geom_bar()+xlab("Research type")+ylab("Organizition Count")+ggtitle("Histogram of Frequency by Organizition Count VS Research")
+
+ggplot(data23.1, aes(x=Research, fill=Budget))+geom_bar()+xlab("Research type")+ylab("Organizition Count")+ggtitle("Histogram of Budget by Organizition Count VS Research")
+
 
 # histograms of Priorities
 ggplot(data = subset(rank_final,!is.na(Frequency))) + geom_bar(aes(priority)) +
@@ -187,8 +211,29 @@ nd
 
 # response variable: research
 
+mod23.1_1<-multinom(Research~Frequency+Budget,data=data23.1,family=binomial(link="logit"))
+summary(mod23.1_1)
 
+broom::tidy(mod23.1_1, exponentiate = FALSE, conf.int = TRUE) %>% kable(digits = 2, format = "markdown")
 
+a<-c("rare","ultra-rare")
+b<-c("Highest","Medium-High","Medium-Low","Lowest")
+nd<- expand.grid(a,b)
+colnames(nd)<-c("Frequency","Budget")
+nd["class"]<-predict(mod23.1_1,newdata=nd)
+nd%<>%arrange(desc(Frequency,Budget))
+
+pred23.1_1<-fitted(mod23.1_1)
+resid23.1_1<-residuals(mod23.1_1)
+binnedplot(pred23.1_1,resid23.1_1)
+
+pred23.1_1<-fitted(mod23.1_1)
+resid23.1_1<-residuals(mod23.1_1)
+par(mfrow=c(2,4))
+for(i in 1:3){
+  binnedplot(pred23.1_1[,i],resid23.1_1[,i],main="")
+  title(colnames(pred23.1_1)[i])
+}
 
 # response variable: FDA therapy
 
