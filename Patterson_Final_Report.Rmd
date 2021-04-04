@@ -190,15 +190,18 @@ The first multinomial model we ran was using Priority as the response variable. 
 m2<-multinom(priority~Frequency+Budget,data=rank_final,family=binomial(link="logit"))
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, out.width=.8}
 
 a<-c("rare","ultra-rare")
 b<-c("Highest","Medium-High","Medium-Low","Lowest")
 nd<- expand.grid(a,b)
 colnames(nd)<-c("Frequency","Budget")
-nd["class"]<-predict(m2,newdata=nd)
+prob<-predict(m2,newdata=nd,type="probs")
+nd[,3:10]<-prob
 nd%<>%arrange(desc(Frequency,Budget))
-kable(nd, caption = "Model results show that ultra-rare disease and high budget organizations are more likely to prioritize research, while rare disease organizations are more likely to prioritize family education.", align = "c")
+colnames(nd)[3:10]<-colnames(prob)
+nd["Highest Class"]<-predict(m2,newdata=nd)
+kable(nd, caption = "Model results show that ultra-rare disease and high budget organizations are more likely to prioritize research, while rare disease organizations are more likely to prioritize family education.", align = "c") %>% kableExtra::kable_styling(latex_options="scale_down")
 ```
 
 ### Research Internal vs. External
@@ -287,7 +290,7 @@ mod25.1_6<-multinom(FDA~Frequency+Budget,data=data25.3,family=binomial(link="log
 broom::tidy(mod25.1_6, exponentiate = FALSE, conf.int = TRUE)%>% kable(digits = 2, format = "markdown", caption = "Model output for FDA Therapy response variable shows no significant coefficient estimates at alpha = 0.05")
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Residual plots for FDA Therapy response variable"}
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="Residual plot for FDA Therapy response variable"}
 
 pred25.1_6<-fitted(mod25.1_6)
 resid25.1_6<-residuals(mod25.1_6)
